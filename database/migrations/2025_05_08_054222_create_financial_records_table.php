@@ -6,16 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('financial_records', function (Blueprint $table) {
             $table->id();
-            $table->enum('type', ['income', 'expense']);
+            $table->enum('type', ['sales', 'purchase', 'expense', 'other']);
             $table->decimal('amount', 15, 2);
+            $table->decimal('profit', 15, 2)->nullable(); // Untuk mencatat laba dari penjualan
+            $table->foreignId('transaction_id')->nullable()->constrained(); // Referensi ke transaksi
             $table->text('description');
+            $table->date('record_date');
             $table->timestamps();
         });
     }

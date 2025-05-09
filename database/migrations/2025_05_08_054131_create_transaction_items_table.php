@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('transaction_items', function (Blueprint $table) {
@@ -16,15 +13,14 @@ return new class extends Migration
             $table->foreignId('transaction_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->integer('quantity');
-            $table->decimal('price', 15, 2);
-            $table->decimal('subtotal', 15, 2);
+            $table->decimal('purchase_price', 15, 2); // Harga Modal
+            $table->decimal('selling_price', 15, 2);  // Harga Jual
+            $table->decimal('profit', 15, 2);         // Laba per item
+            $table->decimal('subtotal', 15, 2);       // Total harga jual
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('transaction_items');
