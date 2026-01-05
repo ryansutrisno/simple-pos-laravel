@@ -69,7 +69,7 @@ class ProductResource extends Resource
                             ->numeric()
                             ->required(),
                         Forms\Components\Toggle::make('is_active')
-                            ->label('Status')
+                            ->label('Active')
                             ->default(true),
                     ])->columns(2),
                 Forms\Components\Section::make('Gambar Produk')

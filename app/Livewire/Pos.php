@@ -6,6 +6,8 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\FinancialRecord;
 use App\Models\Transaction;
+use App\Models\ReceiptTemplate;
+use App\Services\ReceiptTemplateService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -14,7 +16,7 @@ use Filament\Notifications\Notification;
 class Pos extends Component
 {
     use WithPagination;
-    
+
     public $cart = [];
     public $paymentMethod = 'cash';
     public $cashReceived = 0;
@@ -22,10 +24,24 @@ class Pos extends Component
     public $selectedCategoryId = null;
     public $categories;
     public $cashAmount = 0;
+    public $lastTransactionId = null;
+    public $showSuccessModal = false;
+    public $store;
+    public $availableTemplates = [];
+    public $selectedTemplateId = null;
 
     public function mount()
     {
         $this->categories = Category::all();
+        $this->store = \App\Models\Store::first();
+        
+        // Load available receipt templates
+        $templateService = new ReceiptTemplateService();
+        $this->availableTemplates = $templateService->getAvailableTemplates($this->store);
+        
+        // Set the active template or default
+        $activeTemplate = $templateService->getActiveTemplate($this->store);
+        $this->selectedTemplateId = $activeTemplate?->id;
     }
 
     public function updatedPaymentMethod($value)
@@ -42,8 +58,38 @@ class Pos extends Component
         }
 
         $total = collect($this->cart)->sum(fn($item) => $item['selling_price'] * $item['quantity']);
-        // Konversi cashAmount ke float untuk memastikan tipe data yang benar
         return max(0, (float) $this->cashAmount - $total);
+    }
+
+    public function getCanCheckoutProperty()
+    {
+        if (empty($this->cart)) {
+            return false;
+        }
+
+        if ($this->paymentMethod === 'cash') {
+            $total = collect($this->cart)->sum(fn($item) => $item['selling_price'] * $item['quantity']);
+            return (float) $this->cashAmount >= $total;
+        }
+
+        return true;
+    }
+
+    public function updateQuantity($index, $action)
+    {
+        if ($action === 'increase') {
+            $this->cart[$index]['quantity']++;
+        } elseif ($action === 'decrease') {
+            if ($this->cart[$index]['quantity'] > 1) {
+                $this->cart[$index]['quantity']--;
+            }
+        }
+    }
+
+    public function removeFromCart($index)
+    {
+        unset($this->cart[$index]);
+        $this->cart = array_values($this->cart);
     }
 
     public function updatedSearchQuery()
@@ -54,7 +100,7 @@ class Pos extends Component
     public function render()
     {
         $products = Product::query()
-            ->when($this->searchQuery, function ($query) { // Changed from $search to $searchQuery
+            ->when($this->searchQuery, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', '%' . $this->searchQuery . '%')
                         ->orWhere('barcode', 'like', '%' . $this->searchQuery . '%')
@@ -72,7 +118,9 @@ class Pos extends Component
         return view('livewire.pos', [
             'products' => $products,
             'categories' => $this->categories,
-            'change' => $this->change
+            'change' => $this->change,
+            'store' => $this->store,
+            'availableTemplates' => $this->availableTemplates,
         ]);
     }
 
@@ -138,43 +186,40 @@ class Pos extends Component
             'record_date' => now()->toDateString()
         ]);
 
-        $this->cart = [];
-        $this->cashAmount = 0;
-
-        $this->dispatch('transaction-completed');
+        $this->lastTransactionId = $transaction->id;
 
         Notification::make()
-            ->title('Transaksi Berhasil')
+            ->title('Transaksi berhasil')
             ->success()
             ->send();
+
+        $this->dispatch('transaction-completed', [
+            'transactionId' => $transaction->id,
+            'templateId' => $this->selectedTemplateId,
+            'transactionData' => $this->getTransactionData($transaction->id),
+        ]);
+
+        $this->reset(['cart', 'cashAmount', 'paymentMethod', 'selectedCategoryId', 'searchQuery']);
+        $this->showSuccessModal = true;
     }
 
-    public function updateQuantity($index, $action)
+    public function getTransactionData($transactionId)
     {
-        if ($action === 'increase') {
-            $this->cart[$index]['quantity']++;
-        } elseif ($action === 'decrease' && $this->cart[$index]['quantity'] > 1) {
-            $this->cart[$index]['quantity']--;
-        }
+        return Transaction::with('items.product')->find($transactionId);
     }
 
-    public function removeFromCart($index)
+    /**
+     * Get available templates for the frontend
+     */
+    public function getTemplatesProperty()
     {
-        unset($this->cart[$index]);
-        $this->cart = array_values($this->cart); // Re-index array
-    }
-
-    public function getCanCheckoutProperty()
-    {
-        if (empty($this->cart)) {
-            return false;
-        }
-
-        if ($this->paymentMethod === 'cash') {
-            $total = collect($this->cart)->sum(fn($item) => $item['selling_price'] * $item['quantity']);
-            return $this->cashAmount >= $total;
-        }
-
-        return true; // Untuk metode pembayaran non-tunai
+        return $this->availableTemplates->map(function ($template) {
+            return [
+                'id' => $template->id,
+                'name' => $template->name,
+                'description' => $template->description,
+                'template_data' => $template->template_data,
+            ];
+        });
     }
 }

@@ -182,6 +182,15 @@ class TransactionResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->label('Detail'),
+                Tables\Actions\Action::make('print')
+                    ->label('Cetak Struk')
+                    ->icon('heroicon-o-printer')
+                    ->color('success')
+                    ->requiresConfirmation(false)
+                    ->url(fn ($record): string => '#')
+                    ->extraAttributes(fn ($record): array => [
+                        'onclick' => "window.printTransactionReceipt({$record->id}); return false;"
+                    ]),
                 Tables\Actions\DeleteAction::make()
                     ->label('Hapus'),
             ])
