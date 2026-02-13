@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ReceiptTemplate extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'name',
         'description',
@@ -36,8 +39,8 @@ class ReceiptTemplate extends Model
     public static function getDefaultTemplate(): ?self
     {
         return static::where('is_default', true)
-                    ->where('is_active', true)
-                    ->first();
+            ->where('is_active', true)
+            ->first();
     }
 
     /**
@@ -46,14 +49,14 @@ class ReceiptTemplate extends Model
     public static function getActiveTemplates(?int $storeId = null): \Illuminate\Database\Eloquent\Collection
     {
         return static::where('is_active', true)
-                    ->when($storeId, function ($query, $storeId) {
-                        $query->where(function ($q) use ($storeId) {
-                            $q->where('store_id', $storeId)
-                              ->orWhereNull('store_id');
-                        });
-                    })
-                    ->orderBy('name')
-                    ->get();
+            ->when($storeId, function ($query, $storeId) {
+                $query->where(function ($q) use ($storeId) {
+                    $q->where('store_id', $storeId)
+                        ->orWhereNull('store_id');
+                });
+            })
+            ->orderBy('name')
+            ->get();
     }
 
     /**
@@ -65,7 +68,7 @@ class ReceiptTemplate extends Model
         $templateData = $this->template_data;
 
         foreach ($required as $section) {
-            if (!isset($templateData[$section])) {
+            if (! isset($templateData[$section])) {
                 return false;
             }
         }
