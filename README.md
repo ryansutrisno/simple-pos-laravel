@@ -1,61 +1,277 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Simpel POS
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A simple, modern Point of Sale (POS) system built with Laravel 12, Filament 3, and Livewire 3.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Product Management**: Manage products with categories, stock tracking, and pricing
+- **Transaction Processing**: Complete POS system with cart management and checkout
+- **Financial Records**: Automatic profit tracking and financial reporting
+- **Receipt Templates**: Customizable receipt templates with multiple formatting options
+- **Bluetooth Printing**: Web Bluetooth API integration for thermal printers
+- **Dashboard**: Real-time statistics and charts for sales and financial data
+- **Multi-Payment Support**: Cash, transfer, and QRIS payment methods
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Backend**: Laravel 12 (PHP 8.2)
+- **Admin Panel**: Filament 3
+- **Frontend**: Livewire 3 + Tailwind CSS 4
+- **Database**: SQLite (default), MySQL/PostgreSQL supported
+- **Testing**: Pest 3
+- **Code Style**: Laravel Pint
 
-## Learning Laravel
+## Installation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Prerequisites
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- PHP 8.2 or higher
+- Composer
+- Node.js 18+ and npm
+- Laravel Herd (recommended) or any PHP web server
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### First-Time Setup
 
-## Laravel Sponsors
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd simpel-pos
+   ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+2. **Install dependencies**
+   ```bash
+   composer install
+   npm install
+   ```
 
-### Premium Partners
+3. **Environment setup**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development/)**
-- **[Active Logic](https://activelogic.com)**
+4. **Database setup**
+   ```bash
+   # Create SQLite database (default)
+   touch database/database.sqlite
+   
+   # Or configure MySQL/PostgreSQL in .env
+   # DB_CONNECTION=mysql
+   # DB_HOST=127.0.0.1
+   # DB_PORT=3306
+   # DB_DATABASE=simpel_pos
+   # DB_USERNAME=your_username
+   # DB_PASSWORD=your_password
+   ```
 
-## Contributing
+5. **Run migrations and seeders**
+   ```bash
+   php artisan migrate --seed
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+6. **Build frontend assets**
+   ```bash
+   npm run build
+   ```
 
-## Code of Conduct
+## Local Development
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Start Development Server
 
-## Security Vulnerabilities
+Using Laravel Herd (recommended):
+```bash
+# The app is automatically available at https://simpel-pos.test
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Using PHP built-in server:
+```bash
+php artisan serve
+# App available at http://localhost:8000
+```
+
+### Development Workflow
+
+1. **Start all services** (server, queue, logs, vite):
+   ```bash
+   composer run dev
+   ```
+
+2. **Run tests**:
+   ```bash
+   # Run all tests
+   php artisan test
+   
+   # Run specific test file
+   php artisan test tests/Feature/PosTest.php
+   
+   # Run filtered tests
+   php artisan test --filter=testCheckout
+   ```
+
+3. **Code formatting**:
+   ```bash
+   # Format all files
+   vendor/bin/pint
+   
+   # Format only modified files
+   vendor/bin/pint --dirty
+   ```
+
+4. **Clear caches** (if needed):
+   ```bash
+   php artisan config:clear
+   php artisan cache:clear
+   php artisan view:clear
+   php artisan route:clear
+   ```
+
+### Accessing the Application
+
+- **Admin Panel**: `https://simpel-pos.test/admin` (or `/admin` on local server)
+- **POS Interface**: Available in Filament admin panel
+- **API Endpoints**: 
+  - `GET /api/transactions/{id}` - Get transaction data for printing
+  - `GET /api/transactions/{id}/preview` - Preview receipt
+  - `GET /api/transactions/templates` - Get available templates
+
+## Production Deployment
+
+### Pre-Deployment Checklist
+
+1. **Set production environment variables**:
+   ```env
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_URL=https://your-domain.com
+   
+   # Configure production database
+   DB_CONNECTION=mysql
+   # ... other database settings
+   
+   # Set secure app key
+   APP_KEY=your-generated-key
+   ```
+
+2. **Optimize application**:
+   ```bash
+   php artisan config:cache
+   php artisan route:cache
+   php artisan view:cache
+   ```
+
+3. **Build production assets**:
+   ```bash
+   npm run build
+   ```
+
+4. **Set proper permissions**:
+   ```bash
+   chmod -R 755 storage bootstrap/cache
+   chown -R www-data:www-data storage bootstrap/cache
+   ```
+
+### Deployment Steps
+
+1. **Deploy code to server**
+   ```bash
+   git pull origin main
+   ```
+
+2. **Install dependencies**
+   ```bash
+   composer install --optimize-autoloader --no-dev
+   npm ci
+   ```
+
+3. **Run migrations**
+   ```bash
+   php artisan migrate --force
+   ```
+
+4. **Clear and cache configurations**
+   ```bash
+   php artisan config:clear
+   php artisan cache:clear
+   php artisan config:cache
+   php artisan route:cache
+   ```
+
+5. **Build assets**
+   ```bash
+   npm run build
+   ```
+
+### Post-Deployment
+
+1. **Create admin user** (if not exists):
+   ```bash
+   php artisan tinker
+   >>> \App\Models\User::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => bcrypt('your-password')])
+   ```
+
+2. **Configure store settings** via admin panel
+
+3. **Test Bluetooth printer connectivity** (if using)
+
+## Project Structure
+
+```
+app/
+├── Filament/           # Filament admin resources and pages
+├── Http/Controllers/   # API and web controllers
+├── Livewire/          # Livewire components (POS, etc.)
+├── Models/            # Eloquent models
+├── Observers/         # Model observers
+└── Services/          # Business logic services
+
+resources/
+├── js/               # JavaScript (Bluetooth printer, etc.)
+├── views/            # Blade templates
+└── css/              # Tailwind CSS
+
+database/
+├── migrations/        # Database migrations
+└── seeders/          # Database seeders
+```
+
+## Key Services
+
+### ReceiptTemplateService
+Manages receipt template operations:
+- `getActiveTemplate()` - Get active template for store
+- `createTemplate()` - Create new template
+- `updateTemplate()` - Update existing template
+- `validateTemplateData()` - Validate template structure
+- `renderReceipt()` - Render receipt using ReceiptRenderer
+
+### ReceiptRenderer
+Handles ESC/POS code generation for thermal printers:
+- Supports header, body, footer sections
+- Configurable alignment, font size, separators
+- Barcode and QR code support
+
+## Troubleshooting
+
+### Vite Manifest Error
+```
+Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest
+```
+**Solution**: Run `npm run build` or `npm run dev`
+
+### Bluetooth Printer Not Connecting
+- Ensure browser supports Web Bluetooth API (Chrome/Edge)
+- Check printer is in pairing mode
+- Verify service UUID: `000018f0-0000-1000-8000-00805f9b34fb`
+
+### Tests Failing
+```bash
+# Clear config cache
+php artisan config:clear
+
+# Run with verbose output
+php artisan test --verbose
+```
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software licensed under the MIT license.
