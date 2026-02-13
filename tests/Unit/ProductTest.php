@@ -12,6 +12,7 @@ it('product has correct fillable attributes', function () {
         'purchase_price',
         'selling_price',
         'stock',
+        'low_stock_threshold',
         'barcode',
         'image',
         'is_active',
@@ -25,6 +26,7 @@ it('product has correct casts', function () {
     expect($casts['is_active'])->toBe('boolean');
     expect($casts['purchase_price'])->toBe('decimal:2');
     expect($casts['selling_price'])->toBe('decimal:2');
+    expect($casts['low_stock_threshold'])->toBe('integer');
 });
 
 it('product uses soft deletes trait', function () {

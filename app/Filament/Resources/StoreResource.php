@@ -3,14 +3,13 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\StoreResource\Pages;
-use App\Models\Store;
 use App\Models\ReceiptTemplate;
+use App\Models\Store;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
 
 class StoreResource extends Resource
 {
@@ -114,8 +113,7 @@ class StoreResource extends Resource
 2. Buka halaman POS
 3. Klik tombol "Hubungkan Printer"
 4. Pilih printer dari daftar yang muncul
-5. Printer akan terhubung dan tersimpan otomatis')
-                            ->visible(fn (Model $record) => true),
+5. Printer akan terhubung dan tersimpan otomatis'),
                     ])
                     ->columns(1),
             ]);

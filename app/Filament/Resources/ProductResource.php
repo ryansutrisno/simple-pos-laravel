@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductResource\Pages;
-use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
@@ -12,8 +11,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
 
 class ProductResource extends Resource
@@ -39,7 +36,7 @@ class ProductResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn(string $operation, $state, Forms\Set $set) => $operation === 'create' ? $set('slug', Str::slug($state)) : null),
+                            ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) => $operation === 'create' ? $set('slug', Str::slug($state)) : null),
                         Forms\Components\TextInput::make('barcode')
                             ->label('Kode Barang')
                             ->unique(table: 'products', column: 'barcode', ignoreRecord: true)
@@ -107,7 +104,9 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('stock')
                     ->label('Stok Produk')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn ($record) => $record->stock <= 0 ? 'danger' : ($record->stock <= $record->low_stock_threshold ? 'warning' : null))
+                    ->icon(fn ($record) => $record->stock <= $record->low_stock_threshold ? 'heroicon-o-exclamation-triangle' : null),
                 Tables\Columns\ToggleColumn::make('is_active')
                     ->label('Aktif'),
             ])
@@ -116,6 +115,14 @@ class ProductResource extends Resource
                 Tables\Filters\SelectFilter::make('category')
                     ->label('Kategori Produk')
                     ->relationship('category', 'name'),
+                Tables\Filters\Filter::make('low_stock')
+                    ->label('Stok Menipis')
+                    ->query(fn ($query) => $query->whereColumn('stock', '<=', 'low_stock_threshold'))
+                    ->toggle(),
+                Tables\Filters\Filter::make('out_of_stock')
+                    ->label('Stok Habis')
+                    ->query(fn ($query) => $query->where('stock', '<=', 0))
+                    ->toggle(),
             ], layout: FiltersLayout::AboveContent)
             ->actions([
                 Tables\Actions\EditAction::make()->label('Ubah'),

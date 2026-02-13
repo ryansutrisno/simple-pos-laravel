@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
@@ -18,6 +20,7 @@ class Product extends Model
         'purchase_price',
         'selling_price',
         'stock',
+        'low_stock_threshold',
         'barcode',
         'image',
         'is_active',
@@ -27,10 +30,47 @@ class Product extends Model
         'is_active' => 'boolean',
         'purchase_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
+        'low_stock_threshold' => 'integer',
     ];
 
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function stockHistories(): HasMany
+    {
+        return $this->hasMany(StockHistory::class);
+    }
+
+    public function isLowStock(): bool
+    {
+        return $this->stock <= $this->low_stock_threshold;
+    }
+
+    public function scopeLowStock(Builder $query): Builder
+    {
+        return $query->whereColumn('stock', '<=', 'low_stock_threshold');
+    }
+
+    public function getStockStatusAttribute(): string
+    {
+        if ($this->stock <= 0) {
+            return 'out_of_stock';
+        }
+        if ($this->stock <= $this->low_stock_threshold) {
+            return 'low_stock';
+        }
+
+        return 'in_stock';
+    }
+
+    public function getStockStatusLabelAttribute(): string
+    {
+        return match ($this->stock_status) {
+            'out_of_stock' => 'Stok Habis',
+            'low_stock' => 'Stok Menipis',
+            default => 'Stok Tersedia',
+        };
     }
 }
