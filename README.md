@@ -66,8 +66,14 @@ A simple, modern Point of Sale (POS) system built with Laravel 12, Filament 3, a
 
 5. **Run migrations and seeders**
    ```bash
+   # Run migrations with seeders to populate default data
    php artisan migrate --seed
    ```
+   
+   **Default data seeded includes:**
+   - Admin user (email: `admin@admin.com`, password: `password`)
+   - Default receipt templates
+   - Sample categories and products (if configured)
 
 6. **Build frontend assets**
    ```bash
@@ -123,6 +129,15 @@ php artisan serve
    php artisan cache:clear
    php artisan view:clear
    php artisan route:clear
+   ```
+
+5. **Re-seed database** (if needed during development):
+   ```bash
+   # Fresh migration with seeders (WARNING: deletes all data)
+   php artisan migrate:fresh --seed
+   
+   # Or run seeders only
+   php artisan db:seed
    ```
 
 ### Accessing the Application
@@ -183,10 +198,16 @@ php artisan serve
    npm ci
    ```
 
-3. **Run migrations**
+3. **Run migrations and seeders**
    ```bash
-   php artisan migrate --force
+   # Run migrations with seeders for first-time deployment
+   php artisan migrate --seed --force
    ```
+   
+   **Note**: This will seed default data including:
+   - Admin user (email: `admin@admin.com`, password: `password`)
+   - Default receipt templates
+   - Sample categories and products (if configured)
 
 4. **Clear and cache configurations**
    ```bash
