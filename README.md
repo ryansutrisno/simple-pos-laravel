@@ -11,6 +11,9 @@ A simple, modern Point of Sale (POS) system built with Laravel 12, Filament 3, a
 - **Bluetooth Printing**: Web Bluetooth API integration for thermal printers
 - **Dashboard**: Real-time statistics and charts for sales and financial data
 - **Multi-Payment Support**: Cash, transfer, and QRIS payment methods
+- **Inventory Management**: Supplier management, purchase orders, stock adjustments, and stock opname
+- **Comprehensive Reports**: Sales, purchase, profit/loss, stock card, debt, and end of day reports
+- **Role-Based Access Control**: Filament Shield integration with 5 predefined roles
 
 ## Tech Stack
 
@@ -70,10 +73,13 @@ A simple, modern Point of Sale (POS) system built with Laravel 12, Filament 3, a
    php artisan migrate --seed
    ```
    
-   **Default data seeded includes:**
-   - Admin user (email: `admin@admin.com`, password: `password`)
-   - Default receipt templates
-   - Sample categories and products (if configured)
+**Default data seeded includes:**
+    - Super Admin user (email: `superadmin@pos.test`, password: `password`, role: `super_admin`)
+    - Admin user (email: `admin@pos.test`, password: `password`, role: `admin`)
+    - Manager user (email: `manager@pos.test`, password: `password`, role: `manager`)
+    - Kasir user (email: `kasir@pos.test`, password: `password`, role: `kasir`)
+    - 5 roles with permissions (super_admin, admin, manager, kasir, panel_user)
+    - Default receipt templates
 
 6. **Build frontend assets**
    ```bash
@@ -204,10 +210,9 @@ php artisan serve
    php artisan migrate --seed --force
    ```
    
-   **Note**: This will seed default data including:
-   - Admin user (email: `admin@admin.com`, password: `password`)
-   - Default receipt templates
-   - Sample categories and products (if configured)
+**Note**: This will seed default data including:
+    - Multiple users with roles (super_admin, admin, manager, kasir)
+    - Default receipt templates
 
 4. **Clear and cache configurations**
    ```bash
@@ -224,15 +229,11 @@ php artisan serve
 
 ### Post-Deployment
 
-1. **Create admin user** (if not exists):
-   ```bash
-   php artisan tinker
-   >>> \App\Models\User::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => bcrypt('your-password')])
-   ```
+1. **Configure store settings** via admin panel
 
-2. **Configure store settings** via admin panel
+2. **Test Bluetooth printer connectivity** (if using)
 
-3. **Test Bluetooth printer connectivity** (if using)
+3. **Assign roles to users** via User Management in admin panel
 
 ## Project Structure
 
@@ -293,6 +294,18 @@ php artisan config:clear
 php artisan test --verbose
 ```
 
+## Changelog
+
+Please see [CHANGELOG.md](CHANGELOG.md) for more information on what has changed recently.
+
+## Contributing
+
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to this project.
+
+## Credits
+
+- **Ryan Sutrisno** - [GitHub](https://github.com/ryansutrisno)
+
 ## License
 
-This project is open-sourced software licensed under the MIT license.
+This project is open-sourced software licensed under the [MIT License](LICENSE).
