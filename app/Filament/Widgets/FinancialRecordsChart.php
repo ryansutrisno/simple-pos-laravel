@@ -3,12 +3,15 @@
 namespace App\Filament\Widgets;
 
 use App\Models\FinancialRecord;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\ChartWidget;
 use Flowframe\Trend\Trend;
 use Flowframe\Trend\TrendValue;
 
 class FinancialRecordsChart extends ChartWidget
 {
+    use HasWidgetShield;
+
     protected static ?string $heading = 'Bagan Keuangan';
 
     protected static ?int $sort = 2;
@@ -69,12 +72,12 @@ class FinancialRecordsChart extends ChartWidget
             'datasets' => [
                 [
                     'label' => 'Keuangan',
-                    'data' => $data->map(fn(TrendValue $value) => $value->aggregate),
+                    'data' => $data->map(fn (TrendValue $value) => $value->aggregate),
                     'backgroundColor' => '#22C55E',
                     'borderColor' => '#F0FDF4',
                 ],
             ],
-            'labels' => $data->map(fn(TrendValue $value) => $value->date),
+            'labels' => $data->map(fn (TrendValue $value) => $value->date),
         ];
     }
 

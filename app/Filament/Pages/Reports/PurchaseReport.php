@@ -6,6 +6,7 @@ use App\Exports\PurchaseExport;
 use App\Models\Supplier;
 use App\Services\ReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
@@ -22,6 +23,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class PurchaseReport extends Page implements HasForms, HasTable
 {
+    use HasPageShield;
     use InteractsWithForms;
     use InteractsWithTable;
 

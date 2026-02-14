@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Reports;
 
 use App\Models\EndOfDay;
 use App\Services\ReportService;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
@@ -17,6 +18,7 @@ use Filament\Pages\Page;
 
 class EndOfDayReport extends Page implements HasForms
 {
+    use HasPageShield;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';

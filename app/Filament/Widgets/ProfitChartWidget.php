@@ -3,11 +3,14 @@
 namespace App\Filament\Widgets;
 
 use App\Models\TransactionItem;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
 
 class ProfitChartWidget extends ChartWidget
 {
+    use HasWidgetShield;
+
     protected static ?string $heading = 'Tren Profit';
 
     protected static ?int $sort = 6;

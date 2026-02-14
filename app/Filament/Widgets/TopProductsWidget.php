@@ -3,10 +3,13 @@
 namespace App\Filament\Widgets;
 
 use App\Models\TransactionItem;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\ChartWidget;
 
 class TopProductsWidget extends ChartWidget
 {
+    use HasWidgetShield;
+
     protected static ?string $heading = 'Produk Terlaris';
 
     protected static ?int $sort = 5;

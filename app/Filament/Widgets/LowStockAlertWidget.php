@@ -3,11 +3,14 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Product;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class LowStockAlertWidget extends BaseWidget
 {
+    use HasWidgetShield;
+
     protected static ?int $sort = 2;
 
     protected function getStats(): array

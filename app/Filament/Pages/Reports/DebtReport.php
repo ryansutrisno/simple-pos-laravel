@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Reports;
 use App\Exports\DebtExport;
 use App\Services\ReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Pages\Page;
@@ -16,6 +17,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class DebtReport extends Page implements HasForms, HasTable
 {
+    use HasPageShield;
     use InteractsWithForms;
     use InteractsWithTable;
 

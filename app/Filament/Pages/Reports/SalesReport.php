@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Reports;
 use App\Exports\SalesExport;
 use App\Services\ReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
@@ -20,6 +21,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class SalesReport extends Page implements HasForms, HasTable
 {
+    use HasPageShield;
     use InteractsWithForms;
     use InteractsWithTable;
 

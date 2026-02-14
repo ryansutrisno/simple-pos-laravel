@@ -3,12 +3,15 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Transaction;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\ChartWidget;
 use Flowframe\Trend\Trend;
 use Flowframe\Trend\TrendValue;
 
 class TransactionsChart extends ChartWidget
 {
+    use HasWidgetShield;
+
     protected static ?string $heading = 'Bagan Transaksi';
 
     public ?string $filter = 'today';
@@ -67,12 +70,12 @@ class TransactionsChart extends ChartWidget
             'datasets' => [
                 [
                     'label' => 'Transaksi',
-                    'data' => $data->map(fn(TrendValue $value) => $value->aggregate),
+                    'data' => $data->map(fn (TrendValue $value) => $value->aggregate),
                     'backgroundColor' => '#36A2EB',
                     'borderColor' => '#9BD0F5',
                 ],
             ],
-            'labels' => $data->map(fn(TrendValue $value) => $value->date),
+            'labels' => $data->map(fn (TrendValue $value) => $value->date),
         ];
     }
 
