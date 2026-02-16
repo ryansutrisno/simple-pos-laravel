@@ -2,44 +2,69 @@
 
 namespace App\Livewire;
 
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Customer;
 use App\Models\FinancialRecord;
+use App\Models\Product;
 use App\Models\Transaction;
-use App\Models\ReceiptTemplate;
+use App\Services\PointService;
 use App\Services\ReceiptTemplateService;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Filament\Notifications\Notification;
 
 class Pos extends Component
 {
     use WithPagination;
 
     public $cart = [];
+
     public $paymentMethod = 'cash';
+
     public $cashReceived = 0;
+
     public $searchQuery = '';
+
     public $selectedCategoryId = null;
+
     public $categories;
+
     public $cashAmount = 0;
+
     public $lastTransactionId = null;
+
     public $showSuccessModal = false;
+
     public $store;
+
     public $availableTemplates = [];
+
     public $selectedTemplateId = null;
+
+    public $selectedCustomerId = null;
+
+    public $customerSearch = '';
+
+    public $redeemPoints = 0;
+
+    public $usePoints = false;
+
+    protected PointService $pointService;
+
+    public function boot(PointService $pointService): void
+    {
+        $this->pointService = $pointService;
+    }
 
     public function mount()
     {
         $this->categories = Category::all();
         $this->store = \App\Models\Store::first();
-        
-        // Load available receipt templates
-        $templateService = new ReceiptTemplateService();
+
+        $templateService = new ReceiptTemplateService;
         $this->availableTemplates = $templateService->getAvailableTemplates($this->store);
-        
-        // Set the active template or default
+
         $activeTemplate = $templateService->getActiveTemplate($this->store);
         $this->selectedTemplateId = $activeTemplate?->id;
     }
@@ -51,14 +76,68 @@ class Pos extends Component
         }
     }
 
+    public function updatedSelectedCustomerId($value)
+    {
+        $this->redeemPoints = 0;
+        $this->usePoints = false;
+    }
+
+    public function updatedUsePoints($value)
+    {
+        if ($value && $this->selectedCustomer) {
+            $this->redeemPoints = $this->getMaxRedeemablePoints();
+        } else {
+            $this->redeemPoints = 0;
+        }
+    }
+
+    public function getSelectedCustomerProperty()
+    {
+        return $this->selectedCustomerId ? Customer::find($this->selectedCustomerId) : null;
+    }
+
+    public function getCustomerPointsProperty(): int
+    {
+        return $this->selectedCustomer?->points ?? 0;
+    }
+
+    public function getMaxRedeemablePoints(): int
+    {
+        if (! $this->selectedCustomer) {
+            return 0;
+        }
+
+        $subtotal = $this->getSubtotal();
+
+        return $this->pointService->getMaxRedeemablePoints($this->selectedCustomer->points, $subtotal);
+    }
+
+    public function getSubtotal(): float
+    {
+        return collect($this->cart)->sum(fn ($item) => $item['selling_price'] * $item['quantity']);
+    }
+
+    public function getDiscountFromPoints(): float
+    {
+        if (! $this->usePoints || $this->redeemPoints <= 0) {
+            return 0;
+        }
+
+        return $this->pointService->calculateRedeemValue($this->redeemPoints);
+    }
+
+    public function getGrandTotalProperty()
+    {
+        return $this->getSubtotal() - $this->getDiscountFromPoints();
+    }
+
     public function getChangeProperty()
     {
         if ($this->paymentMethod !== 'cash') {
             return 0;
         }
 
-        $total = collect($this->cart)->sum(fn($item) => $item['selling_price'] * $item['quantity']);
-        return max(0, (float) $this->cashAmount - $total);
+        return max(0, (float) $this->cashAmount - $this->grandTotal);
     }
 
     public function getCanCheckoutProperty()
@@ -68,11 +147,19 @@ class Pos extends Component
         }
 
         if ($this->paymentMethod === 'cash') {
-            $total = collect($this->cart)->sum(fn($item) => $item['selling_price'] * $item['quantity']);
-            return (float) $this->cashAmount >= $total;
+            return (float) $this->cashAmount >= $this->grandTotal;
         }
 
         return true;
+    }
+
+    public function getPointsToEarnProperty(): int
+    {
+        if (! $this->selectedCustomer) {
+            return 0;
+        }
+
+        return $this->pointService->calculateEarnedPoints($this->grandTotal);
     }
 
     public function updateQuantity($index, $action)
@@ -84,12 +171,20 @@ class Pos extends Component
                 $this->cart[$index]['quantity']--;
             }
         }
+
+        if ($this->usePoints) {
+            $this->redeemPoints = min($this->redeemPoints, $this->getMaxRedeemablePoints());
+        }
     }
 
     public function removeFromCart($index)
     {
         unset($this->cart[$index]);
         $this->cart = array_values($this->cart);
+
+        if ($this->usePoints) {
+            $this->redeemPoints = min($this->redeemPoints, $this->getMaxRedeemablePoints());
+        }
     }
 
     public function updatedSearchQuery()
@@ -102,10 +197,10 @@ class Pos extends Component
         $products = Product::query()
             ->when($this->searchQuery, function ($query) {
                 $query->where(function ($q) {
-                    $q->where('name', 'like', '%' . $this->searchQuery . '%')
-                        ->orWhere('barcode', 'like', '%' . $this->searchQuery . '%')
+                    $q->where('name', 'like', '%'.$this->searchQuery.'%')
+                        ->orWhere('barcode', 'like', '%'.$this->searchQuery.'%')
                         ->orWhereHas('category', function ($q) {
-                            $q->where('name', 'like', '%' . $this->searchQuery . '%');
+                            $q->where('name', 'like', '%'.$this->searchQuery.'%');
                         });
                 });
             })
@@ -115,12 +210,27 @@ class Pos extends Component
             ->where('is_active', true)
             ->paginate(12);
 
+        $customers = collect();
+        if (strlen($this->customerSearch) >= 2) {
+            $customers = Customer::where('is_active', true)
+                ->where(function ($query) {
+                    $query->where('name', 'like', '%'.$this->customerSearch.'%')
+                        ->orWhere('phone', 'like', '%'.$this->customerSearch.'%');
+                })
+                ->limit(10)
+                ->get();
+        }
+
         return view('livewire.pos', [
             'products' => $products,
             'categories' => $this->categories,
             'change' => $this->change,
             'store' => $this->store,
             'availableTemplates' => $this->availableTemplates,
+            'customers' => $customers,
+            'selectedCustomer' => $this->selectedCustomer,
+            'grandTotal' => $this->grandTotal,
+            'pointsToEarn' => $this->pointsToEarn,
         ]);
     }
 
@@ -138,29 +248,51 @@ class Pos extends Component
             'purchase_price' => $product->purchase_price,
             'selling_price' => $product->selling_price,
             'quantity' => 1,
-            'profit' => $product->selling_price - $product->purchase_price
+            'profit' => $product->selling_price - $product->purchase_price,
         ];
+    }
+
+    public function selectCustomer($customerId)
+    {
+        $this->selectedCustomerId = $customerId;
+        $this->customerSearch = '';
+        $this->redeemPoints = 0;
+        $this->usePoints = false;
+    }
+
+    public function removeCustomer()
+    {
+        $this->selectedCustomerId = null;
+        $this->redeemPoints = 0;
+        $this->usePoints = false;
     }
 
     public function checkout()
     {
-        if (!$this->canCheckout) {
+        if (! $this->canCheckout) {
             Notification::make()
                 ->title('Pembayaran tidak valid')
                 ->danger()
                 ->send();
+
             return;
         }
 
-        $total = collect($this->cart)->sum(fn($item) => $item['selling_price'] * $item['quantity']);
-        $totalProfit = collect($this->cart)->sum(fn($item) => $item['profit'] * $item['quantity']);
+        $subtotal = $this->getSubtotal();
+        $discountFromPoints = $this->getDiscountFromPoints();
+        $grandTotal = $subtotal - $discountFromPoints;
+        $totalProfit = collect($this->cart)->sum(fn ($item) => $item['profit'] * $item['quantity']);
 
         $transaction = Transaction::create([
             'user_id' => Auth::id(),
-            'total' => $total,
+            'customer_id' => $this->selectedCustomerId,
+            'total' => $grandTotal,
             'payment_method' => $this->paymentMethod,
             'cash_amount' => $this->paymentMethod === 'cash' ? $this->cashAmount : null,
             'change_amount' => $this->paymentMethod === 'cash' ? $this->change : null,
+            'points_earned' => 0,
+            'points_redeemed' => $this->redeemPoints,
+            'discount_from_points' => $discountFromPoints,
         ]);
 
         foreach ($this->cart as $item) {
@@ -170,20 +302,38 @@ class Pos extends Component
                 'purchase_price' => $item['purchase_price'],
                 'selling_price' => $item['selling_price'],
                 'profit' => $item['profit'],
-                'subtotal' => $item['selling_price'] * $item['quantity']
+                'subtotal' => $item['selling_price'] * $item['quantity'],
             ]);
 
             Product::find($item['product_id'])->decrement('stock', $item['quantity']);
         }
 
-        // Buat catatan keuangan
+        if ($this->selectedCustomer) {
+            if ($this->redeemPoints > 0) {
+                $this->pointService->redeemPoints($this->selectedCustomer, $this->redeemPoints, $transaction->id);
+            }
+
+            $pointsEarned = $this->pointService->calculateEarnedPoints($grandTotal);
+            if ($pointsEarned > 0) {
+                $this->pointService->earnPoints(
+                    $this->selectedCustomer,
+                    $pointsEarned,
+                    $transaction->id,
+                    'Poin dari transaksi #'.$transaction->id
+                );
+            }
+
+            $this->selectedCustomer->updateStats($grandTotal);
+            $transaction->update(['points_earned' => $pointsEarned]);
+        }
+
         FinancialRecord::create([
             'type' => 'sales',
-            'amount' => $total,
+            'amount' => $grandTotal,
             'profit' => $totalProfit,
             'transaction_id' => $transaction->id,
-            'description' => 'Penjualan produk',
-            'record_date' => now()->toDateString()
+            'description' => 'Penjualan produk'.($this->selectedCustomer ? ' - '.$this->selectedCustomer->name : ''),
+            'record_date' => now()->toDateString(),
         ]);
 
         $this->lastTransactionId = $transaction->id;
@@ -199,18 +349,15 @@ class Pos extends Component
             'transactionData' => $this->getTransactionData($transaction->id),
         ]);
 
-        $this->reset(['cart', 'cashAmount', 'paymentMethod', 'selectedCategoryId', 'searchQuery']);
+        $this->reset(['cart', 'cashAmount', 'paymentMethod', 'selectedCategoryId', 'searchQuery', 'selectedCustomerId', 'redeemPoints', 'usePoints']);
         $this->showSuccessModal = true;
     }
 
     public function getTransactionData($transactionId)
     {
-        return Transaction::with('items.product')->find($transactionId);
+        return Transaction::with('items.product', 'customer')->find($transactionId);
     }
 
-    /**
-     * Get available templates for the frontend
-     */
     public function getTemplatesProperty()
     {
         return $this->availableTemplates->map(function ($template) {

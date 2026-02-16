@@ -27,6 +27,7 @@ class ShieldSeeder extends Seeder
             'view_supplier::debt', 'view_any_supplier::debt', 'create_supplier::debt', 'update_supplier::debt', 'restore_supplier::debt', 'restore_any_supplier::debt', 'replicate_supplier::debt', 'reorder_supplier::debt', 'delete_supplier::debt', 'delete_any_supplier::debt', 'force_delete_supplier::debt', 'force_delete_any_supplier::debt',
             'view_transaction', 'view_any_transaction', 'create_transaction', 'update_transaction', 'restore_transaction', 'restore_any_transaction', 'replicate_transaction', 'reorder_transaction', 'delete_transaction', 'delete_any_transaction', 'force_delete_transaction', 'force_delete_any_transaction',
             'view_user', 'view_any_user', 'create_user', 'update_user', 'restore_user', 'restore_any_user', 'replicate_user', 'reorder_user', 'delete_user', 'delete_any_user', 'force_delete_user', 'force_delete_any_user',
+            'view_customer', 'view_any_customer', 'create_customer', 'update_customer', 'restore_customer', 'restore_any_customer', 'replicate_customer', 'reorder_customer', 'delete_customer', 'delete_any_customer', 'force_delete_customer', 'force_delete_any_customer',
             'page_DebtReport', 'page_EndOfDayReport', 'page_ProfitLossReport', 'page_PurchaseReport', 'page_SalesReport', 'page_StockCardReport',
             'widget_StatsOverview', 'widget_TransactionsChart', 'widget_FinancialRecordsChart', 'widget_LowStockAlertWidget', 'widget_SalesChartWidget', 'widget_PaymentMethodChartWidget', 'widget_TopProductsWidget', 'widget_ProfitChartWidget',
         ];
@@ -61,6 +62,7 @@ class ShieldSeeder extends Seeder
             'view_stock::adjustment', 'view_any_stock::adjustment', 'create_stock::adjustment',
             'view_stock::opname', 'view_any_stock::opname', 'create_stock::opname',
             'view_financial::record', 'view_any_financial::record',
+            'view_customer', 'view_any_customer', 'create_customer', 'update_customer',
             'page_DebtReport', 'page_EndOfDayReport', 'page_ProfitLossReport', 'page_PurchaseReport', 'page_SalesReport', 'page_StockCardReport',
             'widget_StatsOverview', 'widget_TransactionsChart', 'widget_FinancialRecordsChart', 'widget_LowStockAlertWidget', 'widget_SalesChartWidget', 'widget_PaymentMethodChartWidget', 'widget_TopProductsWidget', 'widget_ProfitChartWidget',
         ];
@@ -72,6 +74,7 @@ class ShieldSeeder extends Seeder
         $kasirPermissions = [
             'view_product', 'view_any_product',
             'view_transaction', 'view_any_transaction', 'create_transaction',
+            'view_customer', 'view_any_customer',
             'page_EndOfDayReport',
             'widget_StatsOverview', 'widget_LowStockAlertWidget',
         ];

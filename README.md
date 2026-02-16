@@ -6,6 +6,8 @@ A simple, modern Point of Sale (POS) system built with Laravel 12, Filament 3, a
 
 - **Product Management**: Manage products with categories, stock tracking, and pricing
 - **Transaction Processing**: Complete POS system with cart management and checkout
+- **Customer Management**: Customer database with loyalty points, purchase history, and point redemption
+- **Loyalty Points System**: Earn points (Rp 10.000 = 1 point), redeem points (1 point = Rp 1.000), max 50% of transaction
 - **Financial Records**: Automatic profit tracking and financial reporting
 - **Receipt Templates**: Customizable receipt templates with multiple formatting options
 - **Bluetooth Printing**: Web Bluetooth API integration for thermal printers
@@ -74,12 +76,13 @@ A simple, modern Point of Sale (POS) system built with Laravel 12, Filament 3, a
    ```
    
 **Default data seeded includes:**
-    - Super Admin user (email: `superadmin@pos.test`, password: `password`, role: `super_admin`)
-    - Admin user (email: `admin@pos.test`, password: `password`, role: `admin`)
-    - Manager user (email: `manager@pos.test`, password: `password`, role: `manager`)
-    - Kasir user (email: `kasir@pos.test`, password: `password`, role: `kasir`)
-    - 5 roles with permissions (super_admin, admin, manager, kasir, panel_user)
-    - Default receipt templates
+     - Super Admin user (email: `superadmin@pos.test`, password: `password`, role: `super_admin`)
+     - Admin user (email: `admin@pos.test`, password: `password`, role: `admin`)
+     - Manager user (email: `manager@pos.test`, password: `password`, role: `manager`)
+     - Kasir user (email: `kasir@pos.test`, password: `password`, role: `kasir`)
+     - 5 roles with permissions (super_admin, admin, manager, kasir, panel_user)
+     - 5 sample customers
+     - Default receipt templates
 
 6. **Build frontend assets**
    ```bash
@@ -257,6 +260,16 @@ database/
 ```
 
 ## Key Services
+
+### PointService
+Handles loyalty point calculations:
+- `calculateEarnedPoints($amount)` - Calculate points from transaction amount
+- `calculateRedeemValue($points)` - Calculate discount value from points
+- `getMaxRedeemablePoints($points, $total)` - Get max redeemable points
+- Earn rate: Rp 10.000 = 1 point
+- Redeem rate: 1 point = Rp 1.000
+- Minimum redeem: 10 points
+- Maximum redeem: 50% of transaction total
 
 ### ReceiptTemplateService
 Manages receipt template operations:

@@ -34,7 +34,6 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('POS')
             ->spa()
             ->sidebarCollapsibleOnDesktop()
-            ->topNavigation()
             ->colors([
                 'primary' => Color::Blue,
             ])

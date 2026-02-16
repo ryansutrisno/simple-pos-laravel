@@ -138,7 +138,6 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                 </svg>
                             </button>
-                            <!-- Tambah tombol hapus -->
                             <button wire:click="removeFromCart({{ $index }})"
                                 class="p-1 rounded-full hover:bg-red-100 transition-colors">
                                 <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -161,6 +160,69 @@
 
             @if(count($cart) > 0)
             <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 sticky bottom-0">
+                <!-- Customer Selection -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pelanggan (Opsional)</label>
+                    @if($selectedCustomer)
+                    <div class="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                        <div>
+                            <p class="font-medium text-sm text-gray-900 dark:text-white">{{ $selectedCustomer->name }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                {{ $selectedCustomer->phone }} | Poin: {{ $selectedCustomer->points }}
+                            </p>
+                        </div>
+                        <button wire:click="removeCustomer" class="text-red-500 hover:text-red-700">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    @else
+                    <div class="relative">
+                        <input type="text"
+                            wire:model.live="customerSearch"
+                            placeholder="Cari nama atau no. telepon..."
+                            class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-primary-500 focus:border-primary-500">
+                        @if(strlen($customerSearch) >= 2 && $customers->count() > 0)
+                        <div class="absolute z-20 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                            @foreach($customers as $customer)
+                            <button wire:click="selectCustomer({{ $customer->id }})" class="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
+                                <span class="font-medium text-gray-900 dark:text-white">{{ $customer->name }}</span>
+                                <span class="text-gray-500 dark:text-gray-400 text-xs block">{{ $customer->phone }} - Poin: {{ $customer->points }}</span>
+                            </button>
+                            @endforeach
+                        </div>
+                        @endif
+                    </div>
+                    @endif
+                </div>
+
+                <!-- Points Redemption -->
+                @if($selectedCustomer && $selectedCustomer->points >= 10)
+                <div class="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" wire:model.live="usePoints" id="usePoints" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                            <label for="usePoints" class="text-sm font-medium text-gray-700 dark:text-gray-300">Gunakan Poin</label>
+                        </div>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Saldo: {{ $selectedCustomer->points }}</span>
+                    </div>
+                    @if($usePoints)
+                    <div class="mt-2">
+                        <div class="flex items-center gap-2">
+                            <input type="number" wire:model.live="redeemPoints" min="0" max="{{ $getMaxRedeemablePoints() }}" class="flex-1 px-2 py-1 text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                            <button wire:click="$set('redeemPoints', {{ $getMaxRedeemablePoints() }})" class="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 rounded">Max</button>
+                        </div>
+                        @if($redeemPoints > 0)
+                        <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+                            Diskon: Rp {{ number_format($redeemPoints * 1000, 0, ',', '.') }}
+                        </p>
+                        @endif
+                    </div>
+                    @endif
+                </div>
+                @endif
+
                 <!-- Metode Pembayaran -->
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Metode Pembayaran</label>
@@ -175,8 +237,22 @@
                 <div class="space-y-2 mb-4">
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-600 dark:text-gray-400">Subtotal</span>
-                        <span class="font-medium text-gray-900 dark:text-white">Rp {{ number_format(collect($cart)->sum(fn($item) => $item['selling_price'] * $item['quantity']), 0, ',', '.') }}</span>
+                        <span class="font-medium text-gray-900 dark:text-white">Rp {{ number_format($getSubtotal(), 0, ',', '.') }}</span>
                     </div>
+
+                    @if($usePoints && $redeemPoints > 0)
+                    <div class="flex justify-between text-sm">
+                        <span class="text-yellow-600 dark:text-yellow-400">Diskon Poin (-{{ $redeemPoints }} poin)</span>
+                        <span class="font-medium text-yellow-600 dark:text-yellow-400">- Rp {{ number_format($redeemPoints * 1000, 0, ',', '.') }}</span>
+                    </div>
+                    @endif
+
+                    @if($selectedCustomer && $pointsToEarn > 0)
+                    <div class="flex justify-between text-sm">
+                        <span class="text-green-600 dark:text-green-400">Poin yang didapat</span>
+                        <span class="font-medium text-green-600 dark:text-green-400">+{{ $pointsToEarn }} poin</span>
+                    </div>
+                    @endif
 
                     @if($paymentMethod === 'cash')
                     <div class="mt-3">
@@ -220,7 +296,7 @@
 
                     <div class="flex justify-between text-base font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
                         <span class="text-gray-900 dark:text-white">Grand Total</span>
-                        <span class="text-gray-900 dark:text-white">Rp {{ number_format(collect($cart)->sum(fn($item) => $item['selling_price'] * $item['quantity']), 0, ',', '.') }}</span>
+                        <span class="text-gray-900 dark:text-white">Rp {{ number_format($grandTotal, 0, ',', '.') }}</span>
                     </div>
                 </div>
 

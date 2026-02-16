@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TransactionResource\Pages;
-use App\Filament\Resources\TransactionResource\RelationManagers;
 use App\Models\Transaction;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -11,9 +10,9 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TransactionResource extends Resource
 {
@@ -39,6 +38,12 @@ class TransactionResource extends Resource
                                     ->relationship('user', 'name')
                                     ->label('Kasir')
                                     ->required(),
+                                Forms\Components\Select::make('customer_id')
+                                    ->relationship('customer', 'name')
+                                    ->label('Pelanggan')
+                                    ->searchable()
+                                    ->preload()
+                                    ->placeholder('Tanpa Pelanggan'),
                                 Forms\Components\TextInput::make('total')
                                     ->label('Total Pembayaran')
                                     ->required()
@@ -50,12 +55,12 @@ class TransactionResource extends Resource
                                     ->options([
                                         'cash' => 'Tunai',
                                         'transfer' => 'Transfer Bank',
-                                        'qris' => 'QRIS'
+                                        'qris' => 'QRIS',
                                     ])
                                     ->required()
                                     ->default('cash'),
                             ])
-                            ->columns(3),
+                            ->columns(2),
 
                         Forms\Components\Section::make('Detail Item')
                             ->schema([
@@ -104,8 +109,8 @@ class TransactionResource extends Resource
                                     ->reorderable(false)
                                     ->addActionLabel('Tambah Item')
                                     ->itemLabel('Item Transaksi')
-                                    ->live()
-                            ])
+                                    ->live(),
+                            ]),
                     ])
                     ->columnSpan(['lg' => 2]),
 
@@ -115,16 +120,25 @@ class TransactionResource extends Resource
                             ->schema([
                                 Forms\Components\Placeholder::make('created_at')
                                     ->label('Tanggal Transaksi')
-                                    ->content(fn($record): string => $record ? $record->created_at->format('d F Y H:i') : '-'),
+                                    ->content(fn ($record): string => $record ? $record->created_at->format('d F Y H:i') : '-'),
+                                Forms\Components\Placeholder::make('customer_name')
+                                    ->label('Pelanggan')
+                                    ->content(fn ($record): string => $record?->customer?->name ?? '-'),
+                                Forms\Components\Placeholder::make('points_info')
+                                    ->label('Poin')
+                                    ->content(fn ($record): string => $record ? "Diperoleh: {$record->points_earned} | Ditukar: {$record->points_redeemed}" : '-'),
                                 Forms\Components\Placeholder::make('subtotal')
                                     ->label('Subtotal')
-                                    ->content(fn($record): string => $record ? 'Rp ' . number_format($record->total, 0, ',', '.') : 'Rp 0'),
+                                    ->content(fn ($record): string => $record ? 'Rp '.number_format($record->total + $record->discount_from_points, 0, ',', '.') : 'Rp 0'),
+                                Forms\Components\Placeholder::make('discount')
+                                    ->label('Diskon Poin')
+                                    ->content(fn ($record): string => $record && $record->discount_from_points > 0 ? 'Rp '.number_format($record->discount_from_points, 0, ',', '.') : '-'),
                                 Forms\Components\Placeholder::make('total')
                                     ->label('Total')
-                                    ->content(fn($record): string => $record ? 'Rp ' . number_format($record->total, 0, ',', '.') : 'Rp 0'),
-                            ])
+                                    ->content(fn ($record): string => $record ? 'Rp '.number_format($record->total, 0, ',', '.') : 'Rp 0'),
+                            ]),
                     ])
-                    ->columnSpan(['lg' => 1])
+                    ->columnSpan(['lg' => 1]),
             ])
             ->columns(3);
     }
@@ -140,19 +154,34 @@ class TransactionResource extends Resource
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Kasir')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('customer.name')
+                    ->label('Pelanggan')
+                    ->searchable()
+                    ->default('-')
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('total')
                     ->label('Total')
                     ->money('IDR')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('points_earned')
+                    ->label('Poin Diperoleh')
+                    ->badge()
+                    ->color('success')
+                    ->default(0),
+                Tables\Columns\TextColumn::make('points_redeemed')
+                    ->label('Poin Ditukar')
+                    ->badge()
+                    ->color('warning')
+                    ->default(0),
                 Tables\Columns\TextColumn::make('payment_method')
                     ->label('Pembayaran')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'cash' => 'success',
                         'transfer' => 'info',
                         'qris' => 'warning',
                     })
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
                         'cash' => 'Tunai',
                         'transfer' => 'Transfer',
                         'qris' => 'QRIS',
@@ -160,6 +189,18 @@ class TransactionResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
+                SelectFilter::make('customer_id')
+                    ->label('Pelanggan')
+                    ->relationship('customer', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->placeholder('Semua Pelanggan'),
+                Filter::make('with_customer')
+                    ->label('Dengan Pelanggan')
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('customer_id')),
+                Filter::make('without_customer')
+                    ->label('Tanpa Pelanggan')
+                    ->query(fn (Builder $query): Builder => $query->whereNull('customer_id')),
                 Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('from')
@@ -170,14 +211,15 @@ class TransactionResource extends Resource
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
                         if ($data['from'] ?? null) {
-                            $indicators['from'] = 'Dari ' . \Carbon\Carbon::parse($data['from'])->format('d M Y');
+                            $indicators['from'] = 'Dari '.\Carbon\Carbon::parse($data['from'])->format('d M Y');
                         }
                         if ($data['to'] ?? null) {
-                            $indicators['to'] = 'Sampai ' . \Carbon\Carbon::parse($data['to'])->format('d M Y');
+                            $indicators['to'] = 'Sampai '.\Carbon\Carbon::parse($data['to'])->format('d M Y');
                         }
+
                         return $indicators;
                     })
-                    ->columns(2)
+                    ->columns(2),
             ], layout: FiltersLayout::AboveContent)->filtersFormColumns(2)
             ->actions([
                 Tables\Actions\ViewAction::make()
@@ -189,7 +231,7 @@ class TransactionResource extends Resource
                     ->requiresConfirmation(false)
                     ->url(fn ($record): string => '#')
                     ->extraAttributes(fn ($record): array => [
-                        'onclick' => "window.printTransactionReceipt({$record->id}); return false;"
+                        'onclick' => "window.printTransactionReceipt({$record->id}); return false;",
                     ]),
                 Tables\Actions\DeleteAction::make()
                     ->label('Hapus'),

@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-16
+
+### Added
+
+#### Customer Management
+- Customer model with profile data (name, phone, email, address)
+- Customer points and statistics tracking
+- CustomerResource with CRUD operations in Filament
+- Points history tracking per customer
+- Transaction history per customer
+- CustomerFactory for testing
+
+#### Loyalty Points System
+- PointService for point calculations
+- Earn points: Rp 10.000 = 1 point
+- Redeem points: 1 point = Rp 1.000
+- Minimum redeem: 10 points
+- Maximum redeem: 50% of transaction
+- Point redemption in POS checkout
+- Automatic point earning after transaction
+
+#### POS Enhancements
+- Customer selection during checkout
+- Customer search by name/phone
+- Point redemption option with validation
+- Display available points
+- Display points to be earned
+
+### Changed
+- Transaction model: added customer_id, points_earned, points_redeemed, discount_from_points columns
+- POS component: integrated customer selection and points functionality
+- TransactionResource: added customer column and filter
+- ShieldSeeder: added Customer permissions for all roles
+- DatabaseSeeder: added 5 sample customers
+
+### Database Tables
+- `customers` - Customer profiles with points and stats
+- `customer_points` - Points transaction history (earn/redeem/adjust)
+
+### Filament Resources
+- CustomerResource - Customer management with view pages
+
+### Services
+- `PointService` - Loyalty point calculations and management
+
+### Tests
+- CustomerTest with 21 test cases covering CRUD, points, and validations
+
 ## [1.0.0] - 2026-02-14
 
 ### Added
@@ -170,6 +218,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.1.0 | 2026-02-16 | Customer management with loyalty points system |
 | 1.0.0 | 2026-02-14 | Initial release with complete POS system |
 
 ### Feature Breakdown
@@ -182,13 +231,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ├── Point of Sale
 │   ├── Cart System
 │   ├── Transaction Processing
-│   └── Receipt Printing
+│   ├── Receipt Printing
+│   └── Customer Selection & Points
 ├── Inventory
 │   ├── Supplier Management
 │   ├── Purchase Orders
 │   ├── Supplier Debts
 │   ├── Stock Adjustments
 │   └── Stock Opname
+├── Customer
+│   ├── Customer Database
+│   ├── Loyalty Points
+│   └── Purchase History
 ├── Reports
 │   ├── Sales Report
 │   ├── Purchase Report

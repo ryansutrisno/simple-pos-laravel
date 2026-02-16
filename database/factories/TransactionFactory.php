@@ -16,10 +16,14 @@ class TransactionFactory extends Factory
 
         return [
             'user_id' => User::factory(),
+            'customer_id' => null,
             'total' => $total,
             'payment_method' => fake()->randomElement(['cash', 'transfer', 'qris']),
             'cash_amount' => null,
             'change_amount' => null,
+            'points_earned' => 0,
+            'points_redeemed' => 0,
+            'discount_from_points' => 0,
         ];
     }
 
