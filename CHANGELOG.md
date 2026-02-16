@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2026-02-16
+## [2.1.0] - 2026-02-16
 
 ### Added
 
@@ -53,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Tests
 - CustomerTest with 21 test cases covering CRUD, points, and validations
 
-## [1.0.0] - 2026-02-14
+## [2.0.0] - 2026-02-14
 
 ### Added
 
@@ -218,8 +218,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
-| 1.1.0 | 2026-02-16 | Customer management with loyalty points system |
-| 1.0.0 | 2026-02-14 | Initial release with complete POS system |
+| 2.1.0 | 2026-02-16 | Customer management with loyalty points system |
+| 2.0.0 | 2026-02-14 | Initial release with complete POS system |
 
 ### Feature Breakdown
 
