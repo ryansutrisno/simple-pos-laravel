@@ -25,6 +25,8 @@ class Transaction extends Model
         'points_earned',
         'points_redeemed',
         'discount_from_points',
+        'is_split',
+        'total_splits',
     ];
 
     protected function casts(): array
@@ -38,6 +40,8 @@ class Transaction extends Model
             'points_earned' => 'integer',
             'points_redeemed' => 'integer',
             'discount_from_points' => 'decimal:2',
+            'is_split' => 'boolean',
+            'total_splits' => 'integer',
         ];
     }
 
@@ -64,5 +68,20 @@ class Transaction extends Model
     public function pointsHistory(): HasMany
     {
         return $this->hasMany(CustomerPoint::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(TransactionPayment::class);
+    }
+
+    public function splitBills(): HasMany
+    {
+        return $this->hasMany(SplitBill::class)->orderBy('split_number');
+    }
+
+    public function getTotalPaidAttribute(): float
+    {
+        return (float) $this->payments()->sum('amount');
     }
 }

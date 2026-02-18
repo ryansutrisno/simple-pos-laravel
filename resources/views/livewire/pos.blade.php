@@ -34,6 +34,29 @@
     <div class="flex flex-col md:flex-row flex-1 overflow-hidden">
         <!-- Kolom Kiri - Produk -->
         <div class="w-full md:w-3/4 p-4 overflow-y-auto">
+            <!-- Barcode Scanner Input -->
+            <div class="mb-4">
+                <div class="relative"
+                    x-data="{ focused: false }"
+                    x-init="setTimeout(() => { $refs.barcodeInput.focus(); }, 100)">
+                    <input type="text"
+                        wire:model.live="barcodeInput"
+                        x-ref="barcodeInput"
+                        placeholder="Scan barcode di sini..."
+                        class="w-full pl-10 pr-4 py-3 rounded-lg border-2 border-dashed border-primary-400 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-gray-900 dark:text-white focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-500 dark:focus:border-primary-500 text-sm font-medium"
+                        @focus="focused = true"
+                        @blur="focused = false">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-primary-500 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                    </div>
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none" x-show="focused">
+                        <span class="text-xs text-primary-500 dark:text-primary-400">Tekan Enter</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Tab Kategori -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-4">
                 <div class="flex overflow-x-auto p-2 space-x-2 gap-1">
@@ -112,7 +135,27 @@
         <!-- Kolom Kanan - Keranjang -->
         <div class="w-full md:w-1/4 bg-white dark:bg-gray-800 border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-700 flex flex-col h-[40vh] md:h-auto">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-0 z-10">
-                <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Keranjang Belanja</h2>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Keranjang Belanja</h2>
+                    <div class="flex items-center gap-2">
+                        <button wire:click="loadSuspendedTransactions"
+                            class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            title="Transaksi Tertangguh">
+                            <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                        </button>
+                        @if(count($cart) > 0)
+                        <button wire:click="holdTransaction"
+                            class="p-1.5 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+                            title="Tangguhkan Transaksi">
+                            <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                        @endif
+                    </div>
+                </div>
             </div>
 
             <div class="flex-1 overflow-y-auto p-4">
@@ -359,69 +402,319 @@
                     </div>
                 </div>
 
-                <!-- Tombol Proses -->
-                <button
-                    wire:click="checkout"
-                    wire:loading.attr="disabled"
-                    wire:target="checkout"
-                    @class([ 'w-full py-2 rounded-lg font-medium transition-colors text-sm' , 'bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600'=> ($paymentMethod !== 'cash' || $this->canCheckout),
-                    'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed' => ($paymentMethod === 'cash' && !$this->canCheckout)
-                    ])
-                    @disabled($paymentMethod === 'cash' && !$this->canCheckout)>
-                    <span wire:loading.remove wire:target="checkout">Proses Pembayaran</span>
-                    <span wire:loading wire:target="checkout">Memproses...</span>
-                </button>
+                <!-- Tombol Aksi -->
+                <div class="space-y-2">
+                    <div class="grid grid-cols-2 gap-2">
+                        <button
+                            wire:click="openPaymentModal"
+                            class="py-2 rounded-lg font-medium transition-colors text-sm bg-purple-600 text-white hover:bg-purple-700">
+                            Multi Bayar
+                        </button>
+                        <button
+                            wire:click="openSplitBillModal"
+                            class="py-2 rounded-lg font-medium transition-colors text-sm bg-teal-600 text-white hover:bg-teal-700">
+                            Split Bill
+                        </button>
+                    </div>
+
+                    <button
+                        wire:click="checkout"
+                        wire:loading.attr="disabled"
+                        wire:target="checkout"
+                        @class([ 'w-full py-2 rounded-lg font-medium transition-colors text-sm' , 'bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600'=> ($paymentMethod !== 'cash' || $this->canCheckout),
+                        'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed' => ($paymentMethod === 'cash' && !$this->canCheckout)
+                        ])
+                        @disabled($paymentMethod === 'cash' && !$this->canCheckout)>
+                        <span wire:loading.remove wire:target="checkout">Proses Pembayaran</span>
+                        <span wire:loading wire:target="checkout">Memproses...</span>
+                    </button>
+                </div>
 
                 @endif
+            </div>
+        </div>
+    </div>
 
-                {{-- Success Modal --}}
-                @if($showSuccessModal)
-                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4 shadow-xl transform transition-all">
-                        <div class="text-center">
-                            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 mb-4">
-                                <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
+    <!-- Suspended Transactions Modal -->
+    @if($showSuspendedModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg mx-4 shadow-xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Transaksi Tertangguh</h3>
+                <button wire:click="$set('showSuspendedModal', false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="overflow-y-auto flex-1">
+                @if(count($suspendedTransactions) > 0)
+                <div class="space-y-3">
+                    @foreach($suspendedTransactions as $suspended)
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-mono text-gray-500 dark:text-gray-400">{{ $suspended->suspension_key }}</span>
+                            <span class="text-xs text-gray-400 dark:text-gray-500">{{ $suspended->created_at->format('d/m/Y H:i') }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">Rp {{ number_format($suspended->total, 0, ',', '.') }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ count($suspended->cart_items) }} item
+                                    @if($suspended->customer) - {{ $suspended->customer->name }}@endif
+                                </p>
                             </div>
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Transaksi Berhasil!</h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Transaksi telah berhasil disimpan.</p>
-
-                            <div class="space-y-3">
-                                <button type="button" onclick="window.printReceipt('{{ $lastTransactionId }}')"
-                                    class="w-full flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-                                    </svg>
-                                    Cetak Struk
+                            <div class="flex items-center gap-2">
+                                <button wire:click="resumeTransaction('{{ $suspended->suspension_key }}')"
+                                    class="px-3 py-1 text-xs bg-primary-600 text-white rounded hover:bg-primary-700">
+                                    Lanjutkan
                                 </button>
-
-                                <button wire:click="$set('showSuccessModal', false)"
-                                    class="w-full flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                                    Tutup
+                                <button wire:click="deleteSuspended({{ $suspended->id }})"
+                                    class="px-3 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400">
+                                    Hapus
                                 </button>
                             </div>
                         </div>
                     </div>
+                    @endforeach
+                </div>
+                @else
+                <div class="text-center py-8">
+                    <svg class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <p class="text-gray-500 dark:text-gray-400">Tidak ada transaksi tertangguh</p>
                 </div>
                 @endif
             </div>
         </div>
+    </div>
+    @endif
 
-        <!-- JavaScript untuk Bluetooth Printer -->
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                if (window.bluetoothPrinter) {
-                    window.bluetoothPrinter.autoConnect();
+    <!-- Multi Payment Modal -->
+    @if($showPaymentModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Multi Pembayaran</h3>
+                <button wire:click="$set('showPaymentModal', false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <div class="flex justify-between text-lg font-bold text-gray-900 dark:text-white mb-2">
+                    <span>Total Tagihan:</span>
+                    <span>Rp {{ number_format($grandTotal, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between text-sm {{ $this->remainingPayment > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400' }}">
+                    <span>Sisa:</span>
+                    <span>Rp {{ number_format($this->remainingPayment, 0, ',', '.') }}</span>
+                </div>
+            </div>
+
+            @if(count($payments) > 0)
+            <div class="mb-4 space-y-2">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Pembayaran:</p>
+                @foreach($payments as $index => $payment)
+                <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                    <div>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            @if($payment['payment_method'] === 'cash') Tunai
+                            @elseif($payment['payment_method'] === 'transfer') Transfer
+                            @else QRIS @endif
+                        </span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400 ml-2">Rp {{ number_format($payment['amount'], 0, ',', '.') }}</span>
+                    </div>
+                    <button wire:click="removePayment({{ $index }})" class="text-red-500 hover:text-red-700">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                @endforeach
+            </div>
+            @endif
+
+            @if($this->remainingPayment > 0)
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tambah Pembayaran:</p>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <div>
+                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Metode</label>
+                        <select wire:model.live="currentPaymentMethod" class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm">
+                            <option value="cash">Tunai</option>
+                            <option value="transfer">Transfer</option>
+                            <option value="qris">QRIS</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Jumlah</label>
+                        <input type="number" wire:model.live="currentPaymentAmount" class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm">
+                    </div>
+                </div>
+                @if($currentPaymentMethod !== 'cash')
+                <div class="mb-2">
+                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Referensi</label>
+                    <input type="text" wire:model="currentPaymentReference" placeholder="No. referensi..." class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm">
+                </div>
+                @endif
+                <button wire:click="addPayment" class="w-full py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 text-sm">
+                    + Tambah Pembayaran
+                </button>
+            </div>
+            @endif
+
+            <button wire:click="completeMultiPayment"
+                @disabled($this->remainingPayment > 0)
+                class="w-full py-2 rounded-lg font-medium text-sm {{ $this->remainingPayment > 0 ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'bg-primary-600 text-white hover:bg-primary-700' }}">
+                {{ $this->remainingPayment > 0 ? 'Sisa: Rp '.number_format($this->remainingPayment, 0, ',', '.') : 'Selesaikan Pembayaran' }}
+            </button>
+        </div>
+    </div>
+    @endif
+
+    <!-- Split Bill Modal -->
+    @if($showSplitBillModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg mx-4 shadow-xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Split Bill</h3>
+                <button wire:click="$set('showSplitBillModal', false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Jumlah Split</label>
+                <div class="flex items-center gap-2">
+                    <button wire:click="$set('splitCount', {{ $splitCount - 1 }})" class="px-3 py-1 bg-gray-200 dark:bg-gray-600 rounded">-</button>
+                    <input type="number" wire:model.live="splitCount" min="2" max="10" class="w-20 text-center rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                    <button wire:click="$set('splitCount', {{ $splitCount + 1 }})" class="px-3 py-1 bg-gray-200 dark:bg-gray-600 rounded">+</button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
+                    <span>Total:</span>
+                    <span>Rp {{ number_format($grandTotal, 0, ',', '.') }}</span>
+                </div>
+            </div>
+
+            <div class="overflow-y-auto flex-1 space-y-2">
+                @foreach($splits as $index => $split)
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 {{ $split['paid'] ? 'bg-green-50 dark:bg-green-900/20' : '' }}">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">Split {{ $split['number'] }}</span>
+                        <span class="text-sm font-bold text-gray-900 dark:text-white">Rp {{ number_format($split['amount'], 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select wire:model.live="splits.{{ $index }}.payment_method" class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm" @disabled($split['paid'])>
+                            <option value="cash">Tunai</option>
+                            <option value="transfer">Transfer</option>
+                            <option value="qris">QRIS</option>
+                        </select>
+                        @if(!$split['paid'])
+                        <button wire:click="processSplitPayment({{ $index }})" class="px-3 py-1 bg-primary-600 text-white rounded text-sm hover:bg-primary-700">
+                            Bayar
+                        </button>
+                        @else
+                        <span class="px-3 py-1 bg-green-600 text-white rounded text-sm">
+                            @if($split['payment_method'] === 'cash') Tunai
+                            @elseif($split['payment_method'] === 'transfer') Transfer
+                            @else QRIS @endif
+                        </span>
+                        @endif
+                    </div>
+                </div>
+                @endforeach
+            </div>
+
+            <button wire:click="completeSplitBill"
+                @disabled(collect($splits)->contains('paid', false))
+                class="w-full py-2 rounded-lg font-medium text-sm mt-4 {{ collect($splits)->contains('paid', false) ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'bg-primary-600 text-white hover:bg-primary-700' }}">
+                {{ collect($splits)->contains('paid', false) ? 'Selesaikan semua split' : 'Selesaikan Transaksi' }}
+            </button>
+        </div>
+    </div>
+    @endif
+
+    {{-- Success Modal --}}
+    @if($showSuccessModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4 shadow-xl transform transition-all">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 mb-4">
+                    <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Transaksi Berhasil!</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Transaksi telah berhasil disimpan.</p>
+
+                <div class="space-y-3">
+                    <button type="button" onclick="window.printReceipt('{{ $lastTransactionId }}')"
+                        class="w-full flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                        </svg>
+                        Cetak Struk
+                    </button>
+
+                    <button wire:click="$set('showSuccessModal', false)"
+                        class="w-full flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- JavaScript untuk Bluetooth Printer & Barcode -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.bluetoothPrinter) {
+                window.bluetoothPrinter.autoConnect();
+            }
+        });
+
+        document.addEventListener('livewire:init', () => {
+            Livewire.on('transaction-completed', (data) => {
+                if (window.bluetoothPrinter && window.bluetoothPrinter.connected) {
+                    window.printReceipt(data.transactionId);
                 }
             });
 
-            document.addEventListener('livewire:init', () => {
-                Livewire.on('transaction-completed', (data) => {
-                    if (window.bluetoothPrinter && window.bluetoothPrinter.connected) {
-                        window.printReceipt(data.transactionId);
+            // Auto-focus barcode input after transaction
+            Livewire.on('focus-barcode', () => {
+                setTimeout(() => {
+                    const barcodeInput = document.querySelector('input[wire\\:model\\.live="barcodeInput"]');
+                    if (barcodeInput) {
+                        barcodeInput.focus();
                     }
-                });
+                }, 100);
             });
-        </script>
-    </div>
+        });
+
+        // Keep barcode input focused
+        document.addEventListener('keydown', function(e) {
+            // Don't intercept if user is typing in an input field
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                return;
+            }
+
+            // Focus barcode input on any key press (if not already focused)
+            const barcodeInput = document.querySelector('input[wire\\:model\\.live="barcodeInput"]');
+            if (barcodeInput && document.activeElement !== barcodeInput) {
+                // Only for alphanumeric keys and some special keys
+                if (e.key.length === 1 || e.key === 'Enter') {
+                    barcodeInput.focus();
+                }
+            }
+        });
+    </script>

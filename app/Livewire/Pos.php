@@ -6,7 +6,10 @@ use App\Models\Category;
 use App\Models\Customer;
 use App\Models\FinancialRecord;
 use App\Models\Product;
+use App\Models\SplitBill;
+use App\Models\SuspendedTransaction;
 use App\Models\Transaction;
+use App\Models\TransactionPayment;
 use App\Services\DiscountService;
 use App\Services\PointService;
 use App\Services\ReceiptTemplateService;
@@ -57,9 +60,33 @@ class Pos extends Component
 
     public $voucherError = null;
 
+    public $showSuspendedModal = false;
+
+    public $suspendedTransactions = [];
+
+    public $payments = [];
+
+    public $showPaymentModal = false;
+
+    public $currentPaymentMethod = 'cash';
+
+    public $currentPaymentAmount = 0;
+
+    public $currentPaymentReference = '';
+
+    public $showSplitBillModal = false;
+
+    public $splitCount = 2;
+
+    public $splits = [];
+
+    public $barcodeInput = '';
+
     protected PointService $pointService;
 
     protected DiscountService $discountService;
+
+    protected $listeners = ['barcode-scanned' => 'processBarcode'];
 
     public function boot(PointService $pointService, DiscountService $discountService): void
     {
@@ -98,6 +125,13 @@ class Pos extends Component
             $this->redeemPoints = $this->getMaxRedeemablePoints();
         } else {
             $this->redeemPoints = 0;
+        }
+    }
+
+    public function updatedBarcodeInput($value)
+    {
+        if (strlen($value) >= 8) {
+            $this->processBarcode($value);
         }
     }
 
@@ -351,6 +385,295 @@ class Pos extends Component
         $this->usePoints = false;
     }
 
+    public function processBarcode($barcode)
+    {
+        $product = Product::where('barcode', $barcode)->first();
+
+        if ($product) {
+            $this->addToCart($product->id);
+            $this->barcodeInput = '';
+
+            Notification::make()
+                ->title('Produk ditambahkan')
+                ->body($product->name.' telah ditambahkan ke keranjang')
+                ->success()
+                ->send();
+        } else {
+            Notification::make()
+                ->title('Produk tidak ditemukan')
+                ->body('Barcode: '.$barcode.' tidak ditemukan')
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function holdTransaction()
+    {
+        if (empty($this->cart)) {
+            Notification::make()
+                ->title('Keranjang kosong')
+                ->body('Tidak ada transaksi untuk ditangguhkan')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $suspendedCount = SuspendedTransaction::where('user_id', Auth::id())->count();
+        if ($suspendedCount >= 5) {
+            Notification::make()
+                ->title('Batas maksimal tercapai')
+                ->body('Anda sudah memiliki 5 transaksi tertangguh. Selesaikan atau hapus salah satu.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $suspensionKey = SuspendedTransaction::generateSuspensionKey();
+
+        SuspendedTransaction::create([
+            'user_id' => Auth::id(),
+            'suspension_key' => $suspensionKey,
+            'customer_id' => $this->selectedCustomerId,
+            'cart_items' => $this->cart,
+            'subtotal' => $this->getSubtotal(),
+            'discount_amount' => $this->getTotalDiscountAmount(),
+            'total' => $this->grandTotal,
+            'voucher_code' => $this->appliedVoucher?->code,
+            'notes' => null,
+        ]);
+
+        $this->reset(['cart', 'selectedCustomerId', 'redeemPoints', 'usePoints', 'voucherCode', 'appliedVoucher', 'voucherError', 'cashAmount']);
+
+        Notification::make()
+            ->title('Transaksi ditangguhkan')
+            ->body('Kode tangguhan: '.$suspensionKey)
+            ->success()
+            ->send();
+    }
+
+    public function loadSuspendedTransactions()
+    {
+        $this->suspendedTransactions = SuspendedTransaction::where('user_id', Auth::id())
+            ->with('customer')
+            ->latest()
+            ->get();
+        $this->showSuspendedModal = true;
+    }
+
+    public function resumeTransaction($suspensionKey)
+    {
+        $suspended = SuspendedTransaction::where('suspension_key', $suspensionKey)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if (! $suspended) {
+            Notification::make()
+                ->title('Transaksi tidak ditemukan')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $this->cart = $suspended->cart_items;
+        $this->selectedCustomerId = $suspended->customer_id;
+
+        if ($suspended->voucher_code) {
+            $this->voucherCode = $suspended->voucher_code;
+            $this->applyVoucher();
+        }
+
+        $suspended->delete();
+        $this->showSuspendedModal = false;
+
+        Notification::make()
+            ->title('Transaksi dipulihkan')
+            ->success()
+            ->send();
+    }
+
+    public function deleteSuspended($id)
+    {
+        $suspended = SuspendedTransaction::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if ($suspended) {
+            $suspended->delete();
+            $this->loadSuspendedTransactions();
+
+            Notification::make()
+                ->title('Transaksi tertangguh dihapus')
+                ->success()
+                ->send();
+        }
+    }
+
+    public function openPaymentModal()
+    {
+        $this->showPaymentModal = true;
+        $this->payments = [];
+        $this->currentPaymentMethod = 'cash';
+        $this->currentPaymentAmount = $this->grandTotal;
+        $this->currentPaymentReference = '';
+    }
+
+    public function addPayment()
+    {
+        $remaining = $this->getRemainingPaymentProperty();
+
+        if ($this->currentPaymentAmount <= 0) {
+            Notification::make()
+                ->title('Jumlah tidak valid')
+                ->body('Masukkan jumlah pembayaran yang valid')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        if ($this->currentPaymentAmount > $remaining) {
+            Notification::make()
+                ->title('Jumlah melebihi sisa')
+                ->body('Jumlah pembayaran melebihi sisa tagihan')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $this->payments[] = [
+            'payment_method' => $this->currentPaymentMethod,
+            'amount' => $this->currentPaymentAmount,
+            'reference' => $this->currentPaymentReference,
+        ];
+
+        $remaining = $this->getRemainingPaymentProperty();
+
+        if ($remaining > 0) {
+            $this->currentPaymentAmount = $remaining;
+            $this->currentPaymentReference = '';
+        } else {
+            $this->currentPaymentAmount = 0;
+        }
+
+        Notification::make()
+            ->title('Pembayaran ditambahkan')
+            ->success()
+            ->send();
+    }
+
+    public function removePayment($index)
+    {
+        unset($this->payments[$index]);
+        $this->payments = array_values($this->payments);
+        $this->currentPaymentAmount = $this->getRemainingPaymentProperty();
+    }
+
+    public function getRemainingPaymentProperty(): float
+    {
+        $totalPaid = collect($this->payments)->sum('amount');
+
+        return max(0, $this->grandTotal - $totalPaid);
+    }
+
+    public function completeMultiPayment()
+    {
+        $remaining = $this->getRemainingPaymentProperty();
+
+        if ($remaining > 0) {
+            Notification::make()
+                ->title('Pembayaran belum lunas')
+                ->body('Sisa tagihan: Rp '.number_format($remaining, 0, ',', '.'))
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $transaction = $this->createTransactionWithPayments($this->payments);
+
+        $this->finalizeTransaction($transaction);
+
+        $this->showPaymentModal = false;
+        $this->payments = [];
+    }
+
+    public function openSplitBillModal()
+    {
+        $this->showSplitBillModal = true;
+        $this->splitCount = 2;
+        $this->initSplits();
+    }
+
+    public function updatedSplitCount()
+    {
+        $this->initSplits();
+    }
+
+    public function initSplits()
+    {
+        if ($this->splitCount < 2) {
+            $this->splitCount = 2;
+        }
+
+        if ($this->splitCount > 10) {
+            $this->splitCount = 10;
+        }
+
+        $amountPerSplit = round($this->grandTotal / $this->splitCount, 2);
+        $this->splits = [];
+
+        for ($i = 0; $i < $this->splitCount; $i++) {
+            $this->splits[] = [
+                'number' => $i + 1,
+                'amount' => $amountPerSplit,
+                'payment_method' => 'cash',
+                'reference' => '',
+                'paid' => false,
+            ];
+        }
+
+        $totalSplit = $amountPerSplit * $this->splitCount;
+        if ($totalSplit != $this->grandTotal) {
+            $this->splits[$this->splitCount - 1]['amount'] += ($this->grandTotal - $totalSplit);
+        }
+    }
+
+    public function processSplitPayment($index)
+    {
+        $this->splits[$index]['paid'] = true;
+
+        Notification::make()
+            ->title('Split '.$this->splits[$index]['number'].' dibayar')
+            ->body('Rp '.number_format($this->splits[$index]['amount'], 0, ',', '.').' - '.$this->getPaymentMethodLabel($this->splits[$index]['payment_method']))
+            ->success()
+            ->send();
+    }
+
+    public function completeSplitBill()
+    {
+        $allPaid = collect($this->splits)->every(fn ($split) => $split['paid']);
+
+        if (! $allPaid) {
+            Notification::make()
+                ->title('Belum semua split dibayar')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $transaction = $this->createTransactionWithSplitBill($this->splits);
+
+        $this->finalizeTransaction($transaction);
+
+        $this->showSplitBillModal = false;
+        $this->splits = [];
+    }
+
     public function checkout()
     {
         if (! $this->canCheckout) {
@@ -390,6 +713,8 @@ class Pos extends Component
             'points_earned' => 0,
             'points_redeemed' => $this->redeemPoints,
             'discount_from_points' => $discountFromPoints,
+            'is_split' => false,
+            'total_splits' => 1,
         ]);
 
         foreach ($this->cart as $item) {
@@ -457,9 +782,224 @@ class Pos extends Component
         $this->showSuccessModal = true;
     }
 
+    protected function createTransactionWithPayments(array $payments): Transaction
+    {
+        $subtotalBeforeDiscount = $this->getSubtotalBeforeDiscount();
+        $subtotalAfterProductDiscount = $this->getSubtotal();
+        $globalDiscountAmount = $this->getGlobalDiscountAmount();
+        $voucherDiscountAmount = $this->getVoucherDiscountAmount();
+        $discountFromPoints = $this->getDiscountFromPoints();
+        $grandTotal = max(0, $subtotalAfterProductDiscount - $globalDiscountAmount - $voucherDiscountAmount - $discountFromPoints);
+        $totalProfit = collect($this->cart)->sum(fn ($item) => $item['profit'] * $item['quantity']);
+
+        $discountId = null;
+        if ($this->appliedVoucher) {
+            $discountId = $this->appliedVoucher->id;
+        }
+
+        $transaction = Transaction::create([
+            'user_id' => Auth::id(),
+            'customer_id' => $this->selectedCustomerId,
+            'discount_id' => $discountId,
+            'total' => $grandTotal,
+            'subtotal_before_discount' => $subtotalBeforeDiscount,
+            'discount_amount' => $this->getProductDiscountAmount() + $globalDiscountAmount + $voucherDiscountAmount,
+            'voucher_code' => $this->appliedVoucher?->code,
+            'payment_method' => 'multi',
+            'cash_amount' => null,
+            'change_amount' => null,
+            'points_earned' => 0,
+            'points_redeemed' => $this->redeemPoints,
+            'discount_from_points' => $discountFromPoints,
+            'is_split' => false,
+            'total_splits' => 1,
+        ]);
+
+        foreach ($this->cart as $item) {
+            $transaction->items()->create([
+                'product_id' => $item['product_id'],
+                'quantity' => $item['quantity'],
+                'purchase_price' => $item['purchase_price'],
+                'selling_price' => $item['final_price'] ?? $item['selling_price'],
+                'original_price' => $item['original_price'] ?? $item['selling_price'],
+                'discount_amount' => $item['discount_amount'] ?? 0,
+                'discount_id' => $item['discount_id'] ?? null,
+                'profit' => $item['profit'],
+                'subtotal' => ($item['final_price'] ?? $item['selling_price']) * $item['quantity'],
+            ]);
+
+            Product::find($item['product_id'])->decrement('stock', $item['quantity']);
+        }
+
+        foreach ($payments as $payment) {
+            TransactionPayment::create([
+                'transaction_id' => $transaction->id,
+                'payment_method' => $payment['payment_method'],
+                'amount' => $payment['amount'],
+                'reference' => $payment['reference'] ?? null,
+            ]);
+        }
+
+        if ($this->appliedVoucher) {
+            $this->discountService->incrementUsage($this->appliedVoucher);
+        }
+
+        if ($this->selectedCustomer) {
+            if ($this->redeemPoints > 0) {
+                $this->pointService->redeemPoints($this->selectedCustomer, $this->redeemPoints, $transaction->id);
+            }
+
+            $pointsEarned = $this->pointService->calculateEarnedPoints($grandTotal);
+            if ($pointsEarned > 0) {
+                $this->pointService->earnPoints(
+                    $this->selectedCustomer,
+                    $pointsEarned,
+                    $transaction->id,
+                    'Poin dari transaksi #'.$transaction->id
+                );
+            }
+
+            $this->selectedCustomer->updateStats($grandTotal);
+            $transaction->update(['points_earned' => $pointsEarned]);
+        }
+
+        FinancialRecord::create([
+            'type' => 'sales',
+            'amount' => $grandTotal,
+            'profit' => $totalProfit,
+            'transaction_id' => $transaction->id,
+            'description' => 'Penjualan produk (Multi Payment)'.($this->selectedCustomer ? ' - '.$this->selectedCustomer->name : ''),
+            'record_date' => now()->toDateString(),
+        ]);
+
+        return $transaction;
+    }
+
+    protected function createTransactionWithSplitBill(array $splits): Transaction
+    {
+        $subtotalBeforeDiscount = $this->getSubtotalBeforeDiscount();
+        $subtotalAfterProductDiscount = $this->getSubtotal();
+        $globalDiscountAmount = $this->getGlobalDiscountAmount();
+        $voucherDiscountAmount = $this->getVoucherDiscountAmount();
+        $discountFromPoints = $this->getDiscountFromPoints();
+        $grandTotal = max(0, $subtotalAfterProductDiscount - $globalDiscountAmount - $voucherDiscountAmount - $discountFromPoints);
+        $totalProfit = collect($this->cart)->sum(fn ($item) => $item['profit'] * $item['quantity']);
+
+        $discountId = null;
+        if ($this->appliedVoucher) {
+            $discountId = $this->appliedVoucher->id;
+        }
+
+        $transaction = Transaction::create([
+            'user_id' => Auth::id(),
+            'customer_id' => $this->selectedCustomerId,
+            'discount_id' => $discountId,
+            'total' => $grandTotal,
+            'subtotal_before_discount' => $subtotalBeforeDiscount,
+            'discount_amount' => $this->getProductDiscountAmount() + $globalDiscountAmount + $voucherDiscountAmount,
+            'voucher_code' => $this->appliedVoucher?->code,
+            'payment_method' => 'split',
+            'cash_amount' => null,
+            'change_amount' => null,
+            'points_earned' => 0,
+            'points_redeemed' => $this->redeemPoints,
+            'discount_from_points' => $discountFromPoints,
+            'is_split' => true,
+            'total_splits' => count($splits),
+        ]);
+
+        foreach ($this->cart as $item) {
+            $transaction->items()->create([
+                'product_id' => $item['product_id'],
+                'quantity' => $item['quantity'],
+                'purchase_price' => $item['purchase_price'],
+                'selling_price' => $item['final_price'] ?? $item['selling_price'],
+                'original_price' => $item['original_price'] ?? $item['selling_price'],
+                'discount_amount' => $item['discount_amount'] ?? 0,
+                'discount_id' => $item['discount_id'] ?? null,
+                'profit' => $item['profit'],
+                'subtotal' => ($item['final_price'] ?? $item['selling_price']) * $item['quantity'],
+            ]);
+
+            Product::find($item['product_id'])->decrement('stock', $item['quantity']);
+        }
+
+        foreach ($splits as $split) {
+            SplitBill::create([
+                'transaction_id' => $transaction->id,
+                'split_number' => $split['number'],
+                'subtotal' => $split['amount'],
+                'payment_method' => $split['payment_method'],
+                'amount_paid' => $split['amount'],
+                'reference' => $split['reference'] ?? null,
+                'notes' => null,
+            ]);
+
+            TransactionPayment::create([
+                'transaction_id' => $transaction->id,
+                'payment_method' => $split['payment_method'],
+                'amount' => $split['amount'],
+                'reference' => $split['reference'] ?? null,
+            ]);
+        }
+
+        if ($this->appliedVoucher) {
+            $this->discountService->incrementUsage($this->appliedVoucher);
+        }
+
+        if ($this->selectedCustomer) {
+            if ($this->redeemPoints > 0) {
+                $this->pointService->redeemPoints($this->selectedCustomer, $this->redeemPoints, $transaction->id);
+            }
+
+            $pointsEarned = $this->pointService->calculateEarnedPoints($grandTotal);
+            if ($pointsEarned > 0) {
+                $this->pointService->earnPoints(
+                    $this->selectedCustomer,
+                    $pointsEarned,
+                    $transaction->id,
+                    'Poin dari transaksi #'.$transaction->id
+                );
+            }
+
+            $this->selectedCustomer->updateStats($grandTotal);
+            $transaction->update(['points_earned' => $pointsEarned]);
+        }
+
+        FinancialRecord::create([
+            'type' => 'sales',
+            'amount' => $grandTotal,
+            'profit' => $totalProfit,
+            'transaction_id' => $transaction->id,
+            'description' => 'Penjualan produk (Split Bill - '.count($splits).' bagian)'.($this->selectedCustomer ? ' - '.$this->selectedCustomer->name : ''),
+            'record_date' => now()->toDateString(),
+        ]);
+
+        return $transaction;
+    }
+
+    protected function finalizeTransaction(Transaction $transaction): void
+    {
+        $this->lastTransactionId = $transaction->id;
+
+        Notification::make()
+            ->title('Transaksi berhasil')
+            ->success()
+            ->send();
+
+        $this->dispatch('transaction-completed', [
+            'transactionId' => $transaction->id,
+            'templateId' => $this->selectedTemplateId,
+            'transactionData' => $this->getTransactionData($transaction->id),
+        ]);
+
+        $this->reset(['cart', 'cashAmount', 'paymentMethod', 'selectedCategoryId', 'searchQuery', 'selectedCustomerId', 'redeemPoints', 'usePoints', 'voucherCode', 'appliedVoucher', 'voucherError']);
+        $this->showSuccessModal = true;
+    }
+
     public function getTransactionData($transactionId)
     {
-        return Transaction::with('items.product', 'customer')->find($transactionId);
+        return Transaction::with('items.product', 'customer', 'payments', 'splitBills')->find($transactionId);
     }
 
     public function getTemplatesProperty()
@@ -472,5 +1012,15 @@ class Pos extends Component
                 'template_data' => $template->template_data,
             ];
         });
+    }
+
+    protected function getPaymentMethodLabel(string $method): string
+    {
+        return match ($method) {
+            'cash' => 'Tunai',
+            'transfer' => 'Transfer Bank',
+            'qris' => 'QRIS',
+            default => $method,
+        };
     }
 }

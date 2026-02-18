@@ -17,13 +17,19 @@ class TransactionFactory extends Factory
         return [
             'user_id' => User::factory(),
             'customer_id' => null,
+            'discount_id' => null,
             'total' => $total,
+            'subtotal_before_discount' => $total,
+            'discount_amount' => 0,
+            'voucher_code' => null,
             'payment_method' => fake()->randomElement(['cash', 'transfer', 'qris']),
             'cash_amount' => null,
             'change_amount' => null,
             'points_earned' => 0,
             'points_redeemed' => 0,
             'discount_from_points' => 0,
+            'is_split' => false,
+            'total_splits' => 1,
         ];
     }
 

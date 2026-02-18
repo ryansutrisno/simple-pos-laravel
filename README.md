@@ -13,7 +13,10 @@ A simple, modern Point of Sale (POS) system built with Laravel 12, Filament 3, a
 - **Receipt Templates**: Customizable receipt templates with multiple formatting options
 - **Bluetooth Printing**: Web Bluetooth API integration for thermal printers
 - **Dashboard**: Real-time statistics and charts for sales and financial data
-- **Multi-Payment Support**: Cash, transfer, and QRIS payment methods
+- **Multi-Payment Support**: Combine multiple payment methods (cash, transfer, QRIS) in one transaction
+- **Hold/Suspend Transaction**: Save pending transactions, resume later (max 5 per cashier)
+- **Split Bill**: Divide transaction for multiple payers with separate payments
+- **Barcode Scanner**: Auto-focus input, scan barcode to add products to cart
 - **Inventory Management**: Supplier management, purchase orders, stock adjustments, and stock opname
 - **Comprehensive Reports**: Sales, purchase, profit/loss, stock card, debt, and end of day reports
 - **Role-Based Access Control**: Filament Shield integration with 5 predefined roles

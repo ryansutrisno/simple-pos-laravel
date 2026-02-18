@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-02-18
+
+### Added
+
+#### Hold/Suspend Transaction
+- SuspendedTransaction model with unique suspension key
+- Max 5 suspended transactions per cashier
+- Resume suspended transaction with cart restoration
+- Preserve customer, voucher, and discount data on suspend
+
+#### Multi Payment
+- TransactionPayment model for multiple payment methods
+- Split payment across cash, transfer, and QRIS
+- Payment reference tracking for transfers
+- Total paid calculation from all payments
+
+#### Split Bill
+- SplitBill model for dividing transactions
+- Multiple payers with different payment methods
+- Automatic amount distribution
+- Track each split with subtotal and payment details
+
+#### Barcode Scanner
+- Auto-focus barcode input field
+- Scan and add product to cart
+- Product lookup by barcode
+- Error handling for invalid barcodes
+
+### Changed
+- Transaction model: added is_split, total_splits columns
+- User model: added suspendedTransactions relationship
+- POS component: integrated hold, multi-payment, split bill, and barcode scanning
+
+### Database Tables
+- `suspended_transactions` - Pending transaction storage
+- `transaction_payments` - Multiple payment records
+- `split_bills` - Split bill records
+
+### Models
+- `SuspendedTransaction` - Hold/suspend functionality
+- `TransactionPayment` - Multi-payment support
+- `SplitBill` - Split bill support
+
+### Tests
+- PosEnhancementTest with 26 test cases
+
 ## [2.2.0] - 2026-02-17
 
 ### Added
@@ -264,6 +310,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 2.3.0 | 2026-02-18 | Hold/suspend transaction, multi payment, split bill, barcode scanner |
 | 2.2.0 | 2026-02-17 | Discount system with product, category, global, and voucher discounts |
 | 2.1.0 | 2026-02-16 | Customer management with loyalty points system |
 | 2.0.0 | 2026-02-14 | Initial release with complete POS system |
@@ -280,7 +327,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 │   ├── Transaction Processing
 │   ├── Receipt Printing
 │   ├── Customer Selection & Points
-│   └── Discount & Voucher
+│   ├── Discount & Voucher
+│   ├── Hold/Suspend Transaction
+│   ├── Multi Payment
+│   ├── Split Bill
+│   └── Barcode Scanner
 ├── Inventory
 │   ├── Supplier Management
 │   ├── Purchase Orders
