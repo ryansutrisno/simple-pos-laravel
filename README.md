@@ -8,6 +8,7 @@ A simple, modern Point of Sale (POS) system built with Laravel 12, Filament 3, a
 - **Transaction Processing**: Complete POS system with cart management and checkout
 - **Customer Management**: Customer database with loyalty points, purchase history, and point redemption
 - **Loyalty Points System**: Earn points (Rp 10.000 = 1 point), redeem points (1 point = Rp 1.000), max 50% of transaction
+- **Discount System**: Product discounts, category discounts, global discounts, and voucher/coupon codes with stackable options
 - **Financial Records**: Automatic profit tracking and financial reporting
 - **Receipt Templates**: Customizable receipt templates with multiple formatting options
 - **Bluetooth Printing**: Web Bluetooth API integration for thermal printers
@@ -270,6 +271,15 @@ Handles loyalty point calculations:
 - Redeem rate: 1 point = Rp 1.000
 - Minimum redeem: 10 points
 - Maximum redeem: 50% of transaction total
+
+### DiscountService
+Handles discount calculations:
+- Product discounts (automatic on selected products)
+- Category discounts (automatic for products in category)
+- Global discounts (site-wide promotions)
+- Voucher/coupon codes (manual input)
+- Stackable discounts (multiple discounts per transaction)
+- Min purchase validation, max discount limits, usage limits
 
 ### ReceiptTemplateService
 Manages receipt template operations:

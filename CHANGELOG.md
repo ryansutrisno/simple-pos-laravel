@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-02-17
+
+### Added
+
+#### Discount System
+- Discount model with multiple types (percentage/fixed)
+- Product discounts (per-product discount)
+- Category discounts (all products in category)
+- Global discounts (site-wide promotions)
+- Voucher/coupon codes (manual redemption)
+- Stackable discounts (multiple discounts per transaction)
+- DiscountResource with CRUD operations in Filament
+- DiscountFactory for testing
+
+#### Discount Features
+- DiscountService for discount calculations
+- Automatic product discount application in POS
+- Voucher code input and validation
+- Discount breakdown display in checkout
+- Minimum purchase requirement
+- Maximum discount limit (for percentage)
+- Usage limit per discount
+- Date range validity
+
+### Changed
+- Transaction model: added discount_id, subtotal_before_discount, discount_amount, voucher_code columns
+- TransactionItem model: added original_price, discount_amount, discount_id columns
+- POS component: integrated discount calculations and voucher UI
+- Product model: added discounts relationship
+- Category model: added discounts relationship
+- ShieldSeeder: added Discount permissions for all roles
+
+### Database Tables
+- `discounts` - Discount configurations
+- `discount_product` - Product-discount pivot table
+- `discount_category` - Category-discount pivot table
+
+### Filament Resources
+- DiscountResource - Discount management
+
+### Services
+- `DiscountService` - Discount calculations and validation
+
+### Tests
+- DiscountTest with 18 test cases
+
 ## [2.1.0] - 2026-02-16
 
 ### Added
@@ -218,6 +264,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 2.2.0 | 2026-02-17 | Discount system with product, category, global, and voucher discounts |
 | 2.1.0 | 2026-02-16 | Customer management with loyalty points system |
 | 2.0.0 | 2026-02-14 | Initial release with complete POS system |
 
@@ -232,7 +279,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 │   ├── Cart System
 │   ├── Transaction Processing
 │   ├── Receipt Printing
-│   └── Customer Selection & Points
+│   ├── Customer Selection & Points
+│   └── Discount & Voucher
 ├── Inventory
 │   ├── Supplier Management
 │   ├── Purchase Orders
@@ -243,6 +291,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 │   ├── Customer Database
 │   ├── Loyalty Points
 │   └── Purchase History
+├── Discount
+│   ├── Product Discounts
+│   ├── Category Discounts
+│   ├── Global Discounts
+│   └── Voucher/Coupons
 ├── Reports
 │   ├── Sales Report
 │   ├── Purchase Report
