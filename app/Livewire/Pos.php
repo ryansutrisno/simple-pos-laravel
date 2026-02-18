@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\FinancialRecord;
 use App\Models\Product;
 use App\Models\Transaction;
+use App\Services\DiscountService;
 use App\Services\PointService;
 use App\Services\ReceiptTemplateService;
 use Filament\Notifications\Notification;
@@ -50,11 +51,20 @@ class Pos extends Component
 
     public $usePoints = false;
 
+    public $voucherCode = '';
+
+    public $appliedVoucher = null;
+
+    public $voucherError = null;
+
     protected PointService $pointService;
 
-    public function boot(PointService $pointService): void
+    protected DiscountService $discountService;
+
+    public function boot(PointService $pointService, DiscountService $discountService): void
     {
         $this->pointService = $pointService;
+        $this->discountService = $discountService;
     }
 
     public function mount()
@@ -114,7 +124,70 @@ class Pos extends Component
 
     public function getSubtotal(): float
     {
+        return collect($this->cart)->sum(fn ($item) => ($item['final_price'] ?? $item['selling_price']) * $item['quantity']);
+    }
+
+    public function getSubtotalBeforeDiscount(): float
+    {
         return collect($this->cart)->sum(fn ($item) => $item['selling_price'] * $item['quantity']);
+    }
+
+    public function getProductDiscountAmount(): float
+    {
+        return collect($this->cart)->sum(fn ($item) => ($item['discount_amount'] ?? 0) * $item['quantity']);
+    }
+
+    public function applyVoucher()
+    {
+        $this->voucherError = null;
+
+        if (empty($this->voucherCode)) {
+            return;
+        }
+
+        $subtotal = $this->getSubtotal();
+        $voucher = $this->discountService->validateVoucher($this->voucherCode, $subtotal);
+
+        if (! $voucher) {
+            $this->voucherError = 'Kode voucher tidak valid atau tidak memenuhi syarat';
+            $this->appliedVoucher = null;
+
+            return;
+        }
+
+        $this->appliedVoucher = $voucher;
+        $this->voucherCode = strtoupper($this->voucherCode);
+    }
+
+    public function removeVoucher()
+    {
+        $this->voucherCode = '';
+        $this->appliedVoucher = null;
+        $this->voucherError = null;
+    }
+
+    public function getVoucherDiscountAmount(): float
+    {
+        if (! $this->appliedVoucher) {
+            return 0;
+        }
+
+        return $this->discountService->calculateTransactionDiscount(
+            $this->getSubtotal(),
+            $this->appliedVoucher->code
+        )['voucher_discount_amount'];
+    }
+
+    public function getGlobalDiscountAmount(): float
+    {
+        $subtotal = $this->getSubtotal();
+
+        return $this->discountService->calculateTransactionDiscount($subtotal)['global_discount_amount'];
+    }
+
+    public function getTotalDiscountAmount(): float
+    {
+        return $this->getProductDiscountAmount() + $this->getGlobalDiscountAmount() + $this->getVoucherDiscountAmount();
     }
 
     public function getDiscountFromPoints(): float
@@ -128,7 +201,12 @@ class Pos extends Component
 
     public function getGrandTotalProperty()
     {
-        return $this->getSubtotal() - $this->getDiscountFromPoints();
+        $subtotal = $this->getSubtotal();
+        $globalDiscount = $this->getGlobalDiscountAmount();
+        $voucherDiscount = $this->getVoucherDiscountAmount();
+        $pointsDiscount = $this->getDiscountFromPoints();
+
+        return max(0, $subtotal - $globalDiscount - $voucherDiscount - $pointsDiscount);
     }
 
     public function getChangeProperty()
@@ -242,13 +320,19 @@ class Pos extends Component
     public function addToCart($productId)
     {
         $product = Product::find($productId);
+        $discountInfo = $this->discountService->calculateProductDiscount($product);
+
         $this->cart[] = [
             'product_id' => $product->id,
             'name' => $product->name,
             'purchase_price' => $product->purchase_price,
             'selling_price' => $product->selling_price,
+            'original_price' => $discountInfo['original_price'],
+            'discount_amount' => $discountInfo['discount_amount'],
+            'final_price' => $discountInfo['final_price'],
+            'discount_id' => $discountInfo['discount']?->id,
             'quantity' => 1,
-            'profit' => $product->selling_price - $product->purchase_price,
+            'profit' => $discountInfo['final_price'] - $product->purchase_price,
         ];
     }
 
@@ -278,15 +362,28 @@ class Pos extends Component
             return;
         }
 
-        $subtotal = $this->getSubtotal();
+        $subtotalBeforeDiscount = $this->getSubtotalBeforeDiscount();
+        $subtotalAfterProductDiscount = $this->getSubtotal();
+        $globalDiscountAmount = $this->getGlobalDiscountAmount();
+        $voucherDiscountAmount = $this->getVoucherDiscountAmount();
         $discountFromPoints = $this->getDiscountFromPoints();
-        $grandTotal = $subtotal - $discountFromPoints;
+        $totalDiscountAmount = $globalDiscountAmount + $voucherDiscountAmount + $discountFromPoints;
+        $grandTotal = max(0, $subtotalAfterProductDiscount - $totalDiscountAmount);
         $totalProfit = collect($this->cart)->sum(fn ($item) => $item['profit'] * $item['quantity']);
+
+        $discountId = null;
+        if ($this->appliedVoucher) {
+            $discountId = $this->appliedVoucher->id;
+        }
 
         $transaction = Transaction::create([
             'user_id' => Auth::id(),
             'customer_id' => $this->selectedCustomerId,
+            'discount_id' => $discountId,
             'total' => $grandTotal,
+            'subtotal_before_discount' => $subtotalBeforeDiscount,
+            'discount_amount' => $this->getProductDiscountAmount() + $globalDiscountAmount + $voucherDiscountAmount,
+            'voucher_code' => $this->appliedVoucher?->code,
             'payment_method' => $this->paymentMethod,
             'cash_amount' => $this->paymentMethod === 'cash' ? $this->cashAmount : null,
             'change_amount' => $this->paymentMethod === 'cash' ? $this->change : null,
@@ -300,12 +397,19 @@ class Pos extends Component
                 'product_id' => $item['product_id'],
                 'quantity' => $item['quantity'],
                 'purchase_price' => $item['purchase_price'],
-                'selling_price' => $item['selling_price'],
+                'selling_price' => $item['final_price'] ?? $item['selling_price'],
+                'original_price' => $item['original_price'] ?? $item['selling_price'],
+                'discount_amount' => $item['discount_amount'] ?? 0,
+                'discount_id' => $item['discount_id'] ?? null,
                 'profit' => $item['profit'],
-                'subtotal' => $item['selling_price'] * $item['quantity'],
+                'subtotal' => ($item['final_price'] ?? $item['selling_price']) * $item['quantity'],
             ]);
 
             Product::find($item['product_id'])->decrement('stock', $item['quantity']);
+        }
+
+        if ($this->appliedVoucher) {
+            $this->discountService->incrementUsage($this->appliedVoucher);
         }
 
         if ($this->selectedCustomer) {
@@ -349,7 +453,7 @@ class Pos extends Component
             'transactionData' => $this->getTransactionData($transaction->id),
         ]);
 
-        $this->reset(['cart', 'cashAmount', 'paymentMethod', 'selectedCategoryId', 'searchQuery', 'selectedCustomerId', 'redeemPoints', 'usePoints']);
+        $this->reset(['cart', 'cashAmount', 'paymentMethod', 'selectedCategoryId', 'searchQuery', 'selectedCustomerId', 'redeemPoints', 'usePoints', 'voucherCode', 'appliedVoucher', 'voucherError']);
         $this->showSuccessModal = true;
     }
 

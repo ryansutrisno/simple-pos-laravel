@@ -14,7 +14,11 @@ class Transaction extends Model
     protected $fillable = [
         'user_id',
         'customer_id',
+        'discount_id',
         'total',
+        'subtotal_before_discount',
+        'discount_amount',
+        'voucher_code',
         'payment_method',
         'cash_amount',
         'change_amount',
@@ -27,6 +31,8 @@ class Transaction extends Model
     {
         return [
             'total' => 'decimal:2',
+            'subtotal_before_discount' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
             'cash_amount' => 'decimal:2',
             'change_amount' => 'decimal:2',
             'points_earned' => 'integer',
@@ -48,6 +54,11 @@ class Transaction extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function discount(): BelongsTo
+    {
+        return $this->belongsTo(Discount::class);
     }
 
     public function pointsHistory(): HasMany

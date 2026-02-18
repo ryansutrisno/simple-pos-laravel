@@ -127,9 +127,15 @@ class TransactionResource extends Resource
                                 Forms\Components\Placeholder::make('points_info')
                                     ->label('Poin')
                                     ->content(fn ($record): string => $record ? "Diperoleh: {$record->points_earned} | Ditukar: {$record->points_redeemed}" : '-'),
-                                Forms\Components\Placeholder::make('subtotal')
-                                    ->label('Subtotal')
-                                    ->content(fn ($record): string => $record ? 'Rp '.number_format($record->total + $record->discount_from_points, 0, ',', '.') : 'Rp 0'),
+                                Forms\Components\Placeholder::make('subtotal_before_discount')
+                                    ->label('Subtotal Sebelum Diskon')
+                                    ->content(fn ($record): string => $record ? 'Rp '.number_format($record->subtotal_before_discount ?: ($record->total + $record->discount_from_points), 0, ',', '.') : 'Rp 0'),
+                                Forms\Components\Placeholder::make('discount_amount')
+                                    ->label('Diskon Produk/Global')
+                                    ->content(fn ($record): string => $record && $record->discount_amount > 0 ? 'Rp '.number_format($record->discount_amount, 0, ',', '.') : '-'),
+                                Forms\Components\Placeholder::make('voucher_code')
+                                    ->label('Voucher')
+                                    ->content(fn ($record): string => $record?->voucher_code ?? '-'),
                                 Forms\Components\Placeholder::make('discount')
                                     ->label('Diskon Poin')
                                     ->content(fn ($record): string => $record && $record->discount_from_points > 0 ? 'Rp '.number_format($record->discount_from_points, 0, ',', '.') : '-'),
@@ -163,6 +169,18 @@ class TransactionResource extends Resource
                     ->label('Total')
                     ->money('IDR')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('discount_amount')
+                    ->label('Diskon')
+                    ->money('IDR')
+                    ->sortable()
+                    ->default(0)
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('voucher_code')
+                    ->label('Voucher')
+                    ->searchable()
+                    ->default('-')
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('points_earned')
                     ->label('Poin Diperoleh')
                     ->badge()

@@ -28,6 +28,7 @@ class ShieldSeeder extends Seeder
             'view_transaction', 'view_any_transaction', 'create_transaction', 'update_transaction', 'restore_transaction', 'restore_any_transaction', 'replicate_transaction', 'reorder_transaction', 'delete_transaction', 'delete_any_transaction', 'force_delete_transaction', 'force_delete_any_transaction',
             'view_user', 'view_any_user', 'create_user', 'update_user', 'restore_user', 'restore_any_user', 'replicate_user', 'reorder_user', 'delete_user', 'delete_any_user', 'force_delete_user', 'force_delete_any_user',
             'view_customer', 'view_any_customer', 'create_customer', 'update_customer', 'restore_customer', 'restore_any_customer', 'replicate_customer', 'reorder_customer', 'delete_customer', 'delete_any_customer', 'force_delete_customer', 'force_delete_any_customer',
+            'view_discount', 'view_any_discount', 'create_discount', 'update_discount', 'restore_discount', 'restore_any_discount', 'replicate_discount', 'reorder_discount', 'delete_discount', 'delete_any_discount', 'force_delete_discount', 'force_delete_any_discount',
             'page_DebtReport', 'page_EndOfDayReport', 'page_ProfitLossReport', 'page_PurchaseReport', 'page_SalesReport', 'page_StockCardReport',
             'widget_StatsOverview', 'widget_TransactionsChart', 'widget_FinancialRecordsChart', 'widget_LowStockAlertWidget', 'widget_SalesChartWidget', 'widget_PaymentMethodChartWidget', 'widget_TopProductsWidget', 'widget_ProfitChartWidget',
         ];
@@ -63,6 +64,7 @@ class ShieldSeeder extends Seeder
             'view_stock::opname', 'view_any_stock::opname', 'create_stock::opname',
             'view_financial::record', 'view_any_financial::record',
             'view_customer', 'view_any_customer', 'create_customer', 'update_customer',
+            'view_discount', 'view_any_discount', 'create_discount', 'update_discount', 'delete_discount',
             'page_DebtReport', 'page_EndOfDayReport', 'page_ProfitLossReport', 'page_PurchaseReport', 'page_SalesReport', 'page_StockCardReport',
             'widget_StatsOverview', 'widget_TransactionsChart', 'widget_FinancialRecordsChart', 'widget_LowStockAlertWidget', 'widget_SalesChartWidget', 'widget_PaymentMethodChartWidget', 'widget_TopProductsWidget', 'widget_ProfitChartWidget',
         ];
@@ -75,6 +77,7 @@ class ShieldSeeder extends Seeder
             'view_product', 'view_any_product',
             'view_transaction', 'view_any_transaction', 'create_transaction',
             'view_customer', 'view_any_customer',
+            'view_discount', 'view_any_discount',
             'page_EndOfDayReport',
             'widget_StatsOverview', 'widget_LowStockAlertWidget',
         ];

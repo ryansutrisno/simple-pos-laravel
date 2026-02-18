@@ -122,7 +122,14 @@
                     <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
                         <div class="flex-1 min-w-0 pr-4">
                             <h4 class="font-medium text-gray-900 dark:text-white text-sm truncate">{{ $item['name'] }}</h4>
+                            @if(($item['discount_amount'] ?? 0) > 0)
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                <span class="line-through">Rp {{ number_format($item['original_price'] ?? $item['selling_price'], 0, ',', '.') }}</span>
+                                <span class="text-green-600 dark:text-green-400 ml-1">Rp {{ number_format($item['final_price'] ?? $item['selling_price'], 0, ',', '.') }}</span>
+                            </p>
+                            @else
                             <p class="text-xs text-gray-500 dark:text-gray-400">Rp {{ number_format($item['selling_price'], 0, ',', '.') }}</p>
+                            @endif
                         </div>
                         <div class="flex items-center space-x-2 flex-shrink-0">
                             <button wire:click="updateQuantity({{ $index }}, 'decrease')"
@@ -223,6 +230,37 @@
                 </div>
                 @endif
 
+                <!-- Voucher Code -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kode Voucher (Opsional)</label>
+                    @if($appliedVoucher)
+                    <div class="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                        <div>
+                            <p class="font-medium text-sm text-green-700 dark:text-green-300">{{ $appliedVoucher->name }}</p>
+                            <p class="text-xs text-green-600 dark:text-green-400">Kode: {{ $appliedVoucher->code }}</p>
+                        </div>
+                        <button wire:click="removeVoucher" class="text-red-500 hover:text-red-700">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    @else
+                    <div class="flex gap-2">
+                        <input type="text"
+                            wire:model="voucherCode"
+                            placeholder="Masukkan kode voucher..."
+                            class="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-primary-500 focus:border-primary-500">
+                        <button wire:click="applyVoucher" class="px-3 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                            Terapkan
+                        </button>
+                    </div>
+                    @if($voucherError)
+                    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $voucherError }}</p>
+                    @endif
+                    @endif
+                </div>
+
                 <!-- Metode Pembayaran -->
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Metode Pembayaran</label>
@@ -237,8 +275,29 @@
                 <div class="space-y-2 mb-4">
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-600 dark:text-gray-400">Subtotal</span>
-                        <span class="font-medium text-gray-900 dark:text-white">Rp {{ number_format($getSubtotal(), 0, ',', '.') }}</span>
+                        <span class="font-medium text-gray-900 dark:text-white">Rp {{ number_format($getSubtotalBeforeDiscount(), 0, ',', '.') }}</span>
                     </div>
+
+                    @if($getProductDiscountAmount() > 0)
+                    <div class="flex justify-between text-sm">
+                        <span class="text-green-600 dark:text-green-400">Diskon Produk</span>
+                        <span class="font-medium text-green-600 dark:text-green-400">- Rp {{ number_format($getProductDiscountAmount(), 0, ',', '.') }}</span>
+                    </div>
+                    @endif
+
+                    @if($getGlobalDiscountAmount() > 0)
+                    <div class="flex justify-between text-sm">
+                        <span class="text-green-600 dark:text-green-400">Diskon Global</span>
+                        <span class="font-medium text-green-600 dark:text-green-400">- Rp {{ number_format($getGlobalDiscountAmount(), 0, ',', '.') }}</span>
+                    </div>
+                    @endif
+
+                    @if($appliedVoucher)
+                    <div class="flex justify-between text-sm">
+                        <span class="text-green-600 dark:text-green-400">Diskon Voucher ({{ $appliedVoucher->code }})</span>
+                        <span class="font-medium text-green-600 dark:text-green-400">- Rp {{ number_format($getVoucherDiscountAmount(), 0, ',', '.') }}</span>
+                    </div>
+                    @endif
 
                     @if($usePoints && $redeemPoints > 0)
                     <div class="flex justify-between text-sm">
@@ -249,8 +308,8 @@
 
                     @if($selectedCustomer && $pointsToEarn > 0)
                     <div class="flex justify-between text-sm">
-                        <span class="text-green-600 dark:text-green-400">Poin yang didapat</span>
-                        <span class="font-medium text-green-600 dark:text-green-400">+{{ $pointsToEarn }} poin</span>
+                        <span class="text-blue-600 dark:text-blue-400">Poin yang didapat</span>
+                        <span class="font-medium text-blue-600 dark:text-blue-400">+{{ $pointsToEarn }} poin</span>
                     </div>
                     @endif
 

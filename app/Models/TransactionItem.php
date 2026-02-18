@@ -16,6 +16,9 @@ class TransactionItem extends Model
         'quantity',
         'purchase_price',
         'selling_price',
+        'original_price',
+        'discount_amount',
+        'discount_id',
         'profit',
         'subtotal',
     ];
@@ -23,6 +26,8 @@ class TransactionItem extends Model
     protected $casts = [
         'purchase_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
+        'original_price' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'profit' => 'decimal:2',
         'subtotal' => 'decimal:2',
     ];
@@ -35,5 +40,10 @@ class TransactionItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function discount(): BelongsTo
+    {
+        return $this->belongsTo(Discount::class);
     }
 }
