@@ -318,27 +318,27 @@
                 <div class="space-y-2 mb-4">
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-600 dark:text-gray-400">Subtotal</span>
-                        <span class="font-medium text-gray-900 dark:text-white">Rp {{ number_format($getSubtotalBeforeDiscount(), 0, ',', '.') }}</span>
+                        <span class="font-medium text-gray-900 dark:text-white">Rp {{ number_format($this->getSubtotalBeforeDiscount(), 0, ',', '.') }}</span>
                     </div>
 
-                    @if($getProductDiscountAmount() > 0)
+                    @if($this->getProductDiscountAmount() > 0)
                     <div class="flex justify-between text-sm">
                         <span class="text-green-600 dark:text-green-400">Diskon Produk</span>
-                        <span class="font-medium text-green-600 dark:text-green-400">- Rp {{ number_format($getProductDiscountAmount(), 0, ',', '.') }}</span>
+                        <span class="font-medium text-green-600 dark:text-green-400">- Rp {{ number_format($this->getProductDiscountAmount(), 0, ',', '.') }}</span>
                     </div>
                     @endif
 
-                    @if($getGlobalDiscountAmount() > 0)
+                    @if($this->getGlobalDiscountAmount() > 0)
                     <div class="flex justify-between text-sm">
                         <span class="text-green-600 dark:text-green-400">Diskon Global</span>
-                        <span class="font-medium text-green-600 dark:text-green-400">- Rp {{ number_format($getGlobalDiscountAmount(), 0, ',', '.') }}</span>
+                        <span class="font-medium text-green-600 dark:text-green-400">- Rp {{ number_format($this->getGlobalDiscountAmount(), 0, ',', '.') }}</span>
                     </div>
                     @endif
 
                     @if($appliedVoucher)
                     <div class="flex justify-between text-sm">
                         <span class="text-green-600 dark:text-green-400">Diskon Voucher ({{ $appliedVoucher->code }})</span>
-                        <span class="font-medium text-green-600 dark:text-green-400">- Rp {{ number_format($getVoucherDiscountAmount(), 0, ',', '.') }}</span>
+                        <span class="font-medium text-green-600 dark:text-green-400">- Rp {{ number_format($this->getVoucherDiscountAmount(), 0, ',', '.') }}</span>
                     </div>
                     @endif
 
