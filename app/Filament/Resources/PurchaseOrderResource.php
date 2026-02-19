@@ -383,7 +383,7 @@ class PurchaseOrderResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
-                        ->visible(fn () => auth()->user()->can('delete', PurchaseOrder::class)),
+                        ->visible(fn () => auth()->user()->can('deleteAny', PurchaseOrder::class)),
                 ]),
             ]);
     }
