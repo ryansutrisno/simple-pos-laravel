@@ -80,8 +80,28 @@ class Transaction extends Model
         return $this->hasMany(SplitBill::class)->orderBy('split_number');
     }
 
+    public function returns(): HasMany
+    {
+        return $this->hasMany(ProductReturn::class);
+    }
+
     public function getTotalPaidAttribute(): float
     {
         return (float) $this->payments()->sum('amount');
+    }
+
+    public function hasReturns(): bool
+    {
+        return $this->returns()->exists();
+    }
+
+    public function getTotalReturned(): float
+    {
+        return (float) $this->returns()->sum('total_refund');
+    }
+
+    public function isFullyReturned(): bool
+    {
+        return $this->items()->where('quantity_returned', '<', \DB::raw('quantity'))->doesntExist();
     }
 }

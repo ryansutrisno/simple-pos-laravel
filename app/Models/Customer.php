@@ -16,6 +16,7 @@ class Customer extends Model
         'email',
         'address',
         'points',
+        'store_credit_balance',
         'total_spent',
         'total_transactions',
         'is_active',
@@ -25,6 +26,7 @@ class Customer extends Model
     {
         return [
             'points' => 'integer',
+            'store_credit_balance' => 'decimal:2',
             'total_spent' => 'decimal:2',
             'total_transactions' => 'integer',
             'is_active' => 'boolean',
@@ -39,6 +41,16 @@ class Customer extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function storeCredits(): HasMany
+    {
+        return $this->hasMany(StoreCredit::class);
+    }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(ProductReturn::class);
     }
 
     public function addPoints(int $amount, ?int $transactionId = null, string $description = ''): CustomerPoint
@@ -75,9 +87,58 @@ class Customer extends Model
         return $pointRecord;
     }
 
+    public function reversePoints(int $amount, ?int $returnId = null, string $description = ''): CustomerPoint
+    {
+        $balanceAfter = $this->points - $amount;
+
+        $pointRecord = $this->pointsHistory()->create([
+            'transaction_id' => null,
+            'type' => 'return_earn',
+            'amount' => $amount,
+            'balance_after' => $balanceAfter,
+            'description' => $description,
+        ]);
+
+        $this->update(['points' => $balanceAfter]);
+
+        return $pointRecord;
+    }
+
+    public function returnPoints(int $amount, ?int $returnId = null, string $description = ''): CustomerPoint
+    {
+        $balanceAfter = $this->points + $amount;
+
+        $pointRecord = $this->pointsHistory()->create([
+            'transaction_id' => null,
+            'type' => 'return_redeem',
+            'amount' => $amount,
+            'balance_after' => $balanceAfter,
+            'description' => $description,
+        ]);
+
+        $this->update(['points' => $balanceAfter]);
+
+        return $pointRecord;
+    }
+
     public function getCurrentBalance(): int
     {
         return $this->points;
+    }
+
+    public function getStoreCreditBalance(): float
+    {
+        return (float) $this->store_credit_balance;
+    }
+
+    public function addStoreCredit(float $amount): void
+    {
+        $this->increment('store_credit_balance', $amount);
+    }
+
+    public function useStoreCredit(float $amount): void
+    {
+        $this->decrement('store_credit_balance', $amount);
     }
 
     public function scopeActive($query)

@@ -9,6 +9,7 @@ enum StockMovementType: string
     case Adjustment = 'adjustment';
     case Sale = 'sale';
     case Opname = 'opname';
+    case Return = 'return';
 
     public function getLabel(): string
     {
@@ -18,6 +19,7 @@ enum StockMovementType: string
             self::Adjustment => 'Penyesuaian',
             self::Sale => 'Penjualan',
             self::Opname => 'Opname',
+            self::Return => 'Return',
         };
     }
 
@@ -29,6 +31,7 @@ enum StockMovementType: string
             self::Adjustment => 'warning',
             self::Sale => 'info',
             self::Opname => 'primary',
+            self::Return => 'purple',
         };
     }
 }

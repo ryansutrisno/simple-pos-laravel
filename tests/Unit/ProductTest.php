@@ -16,6 +16,7 @@ it('product has correct fillable attributes', function () {
         'barcode',
         'image',
         'is_active',
+        'is_returnable',
     ]);
 });
 
@@ -24,6 +25,7 @@ it('product has correct casts', function () {
     $casts = $product->getCasts();
 
     expect($casts['is_active'])->toBe('boolean');
+    expect($casts['is_returnable'])->toBe('boolean');
     expect($casts['purchase_price'])->toBe('decimal:2');
     expect($casts['selling_price'])->toBe('decimal:2');
     expect($casts['low_stock_threshold'])->toBe('integer');

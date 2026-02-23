@@ -176,6 +176,138 @@ class BluetoothPrinter {
         }
     }
 
+    async printReturnReceipt(returnId) {
+        if (!this.connected) {
+            alert('Printer tidak terhubung. Silakan hubungkan printer terlebih dahulu.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/returns/${returnId}/receipt`);
+            const result = await response.json();
+
+            if (result && result.success && result.data) {
+                this.printReturnReceiptData(result.data.return);
+            } else {
+                alert('Data return tidak ditemukan.');
+            }
+        } catch (error) {
+            console.error('Error fetching return data:', error);
+            alert('Gagal mengambil data return.');
+        }
+    }
+
+    async printReturnReceiptData(returnData) {
+        if (!this.connected) {
+            alert('Printer tidak terhubung.');
+            return;
+        }
+
+        try {
+            const encoder = new ReceiptPrinterEncoder({
+                language: 'esc-pos',
+                codepageMapping: 'epson'
+            });
+
+            let data = encoder
+                .initialize()
+                .align('center')
+                .bold(true)
+                .size('double-width', 'double-height')
+                .text(returnData.store.name)
+                .bold(false)
+                .size('normal')
+                .text(returnData.store.address)
+                .text('Tel: ' + returnData.store.phone)
+                .newline()
+                .bold(true)
+                .size('double-width')
+                .text('RETURN RECEIPT')
+                .bold(false)
+                .size('normal')
+                .newline()
+                .text('================================')
+                .newline()
+                .align('left')
+                .text('Return #: ' + returnData.return_number)
+                .text('ID: ' + returnData.id)
+                .text('Ref Trans: #' + returnData.transaction_id)
+                .text('Tgl: ' + returnData.date)
+                .text('Kasir: ' + returnData.cashier)
+                .newline()
+                .text('--------------------------------')
+                .newline();
+
+            returnData.items.forEach(item => {
+                const name = item.name;
+                const qty = 'x' + item.quantity;
+                const price = this.formatCurrency(item.price);
+
+                data = data.text(`${name.padEnd(20, ' ')}${qty.padEnd(6, ' ')}${price}`);
+                data = data.text(`   ${this.formatCurrency(item.subtotal).padStart(28, ' ')}`);
+                data = data.newline();
+
+                if (item.is_exchange && item.exchange_product_name) {
+                    data = data.text(`  -> Tukar: ${item.exchange_product_name} x${item.exchange_quantity}`);
+                    data = data.text(`     ${this.formatCurrency(item.exchange_subtotal).padStart(26, ' ')}`);
+                    data = data.newline();
+                }
+            });
+
+            const refundMethodMap = {
+                'cash': 'Tunai',
+                'store_credit': 'Store Credit',
+                'original_method': 'Metode Asal'
+            };
+
+            data = data
+                .text('--------------------------------')
+                .newline()
+                .text('Alasan: ' + (returnData.reason_category || '-'))
+                .newline()
+                .text('--------------------------------')
+                .newline()
+                .text('Total Refund:'.padEnd(20, ' ') + this.formatCurrency(returnData.refund.total_refund).padStart(10, ' '))
+                .newline();
+
+            if (returnData.refund.total_exchange_value > 0) {
+                data = data.text('Nilai Tukar:'.padEnd(20, ' ') + this.formatCurrency(returnData.refund.total_exchange_value).padStart(10, ' '));
+                data = data.newline();
+            }
+
+            if (returnData.refund.selisih_amount != 0) {
+                const selisihLabel = returnData.refund.selisih_amount > 0 ? 'Perlu Dibayar:' : 'Direfund:';
+                data = data
+                    .bold(true)
+                    .text(selisihLabel.padEnd(20, ' ') + this.formatCurrency(Math.abs(returnData.refund.selisih_amount)).padStart(10, ' '))
+                    .bold(false)
+                    .newline();
+            }
+
+            data = data
+                .text('Metode: ' + (refundMethodMap[returnData.refund.method] || returnData.refund.method_label || '-'))
+                .newline()
+                .text('================================')
+                .newline()
+                .bold(true)
+                .align('center')
+                .text('Terima kasih atas pengertian Anda')
+                .bold(false)
+                .newline()
+                .text('================================')
+                .newline()
+                .newline()
+                .newline()
+                .cut('partial')
+                .encode();
+
+            await this.printer.print(data);
+        } catch (error) {
+            console.error('Print return receipt data error:', error);
+            alert('Gagal mencetak struk return. Pastikan printer terhubung dan kertas tersedia.');
+        }
+    }
+
     formatCurrency(amount) {
         return 'Rp ' + (amount || 0).toLocaleString('id-ID');
     }
@@ -246,3 +378,4 @@ window.connectPrinter = () => window.bluetoothPrinter.connect();
 window.disconnectPrinter = () => window.bluetoothPrinter.disconnect();
 window.printReceipt = (transactionId) => window.bluetoothPrinter.printReceipt(transactionId);
 window.printTransactionReceipt = (transactionId) => window.bluetoothPrinter.printReceipt(transactionId);
+window.printReturnReceipt = (returnId) => window.bluetoothPrinter.printReturnReceipt(returnId);

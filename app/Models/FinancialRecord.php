@@ -15,6 +15,7 @@ class FinancialRecord extends Model
         'amount',
         'profit',
         'transaction_id',
+        'product_return_id',
         'description',
         'record_date',
     ];
@@ -28,5 +29,20 @@ class FinancialRecord extends Model
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
+    }
+
+    public function productReturn(): BelongsTo
+    {
+        return $this->belongsTo(ProductReturn::class);
+    }
+
+    public function isSale(): bool
+    {
+        return $this->type === 'sales';
+    }
+
+    public function isRefund(): bool
+    {
+        return $this->type === 'refund';
     }
 }

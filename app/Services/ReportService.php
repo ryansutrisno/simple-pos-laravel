@@ -348,4 +348,70 @@ class ReportService
 
         return $byMethod->toArray();
     }
+
+    public function getReturnReport(Carbon $startDate, Carbon $endDate): array
+    {
+        $returns = \App\Models\ProductReturn::with(['items.product', 'items.exchangeProduct', 'transaction', 'customer', 'user'])
+            ->whereBetween('return_date', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->orderBy('return_date')
+            ->get();
+
+        $totalRefund = $returns->sum('total_refund');
+        $totalExchangeValue = $returns->sum('total_exchange_value');
+        $totalReturns = $returns->count();
+
+        $byType = $returns->groupBy('type')
+            ->map(fn ($group) => [
+                'type' => $group->first()->type->value,
+                'label' => $group->first()->type->getLabel(),
+                'count' => $group->count(),
+                'total' => $group->sum('total_refund'),
+            ])
+            ->values();
+
+        $byReason = $returns->groupBy('reason_category')
+            ->map(fn ($group) => [
+                'reason' => $group->first()->reason_category?->value,
+                'label' => $group->first()->reason_category?->getLabel() ?? 'N/A',
+                'count' => $group->count(),
+                'total' => $group->sum('total_refund'),
+            ])
+            ->values();
+
+        $byRefundMethod = $returns->groupBy('refund_method')
+            ->map(fn ($group) => [
+                'method' => $group->first()->refund_method?->value,
+                'label' => $group->first()->refund_method?->getLabel() ?? 'N/A',
+                'count' => $group->count(),
+                'total' => $group->sum('total_refund'),
+            ])
+            ->values();
+
+        $byDate = $returns->groupBy(fn ($r) => $r->return_date->toDateString())
+            ->map(fn ($group) => [
+                'date' => $group->first()->return_date->toDateString(),
+                'count' => $group->count(),
+                'total_refund' => $group->sum('total_refund'),
+                'total_exchange' => $group->sum('total_exchange_value'),
+            ])
+            ->values();
+
+        $pointsReversed = $returns->sum('points_reversed');
+        $pointsReturned = $returns->sum('points_returned');
+
+        return [
+            'returns' => $returns,
+            'total_refund' => $totalRefund,
+            'total_exchange_value' => $totalExchangeValue,
+            'total_returns' => $totalReturns,
+            'by_type' => $byType,
+            'by_reason' => $byReason,
+            'by_refund_method' => $byRefundMethod,
+            'by_date' => $byDate,
+            'points_reversed' => $pointsReversed,
+            'points_returned' => $pointsReturned,
+            'start_date' => $startDate->toDateString(),
+            'end_date' => $endDate->toDateString(),
+        ];
+    }
 }

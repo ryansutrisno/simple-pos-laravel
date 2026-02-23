@@ -26,35 +26,60 @@ class Store extends Model
         'show_qr_code',
         'receipt_template_id',
         'receipt_width',
+        'return_deadline_days',
+        'enable_store_credit',
+        'store_credit_expiry_days',
+        'store_credit_never_expires',
     ];
 
-    /**
-     * Get the receipt templates for the store.
-     */
+    protected function casts(): array
+    {
+        return [
+            'show_cashier_name' => 'boolean',
+            'show_barcode' => 'boolean',
+            'show_qr_code' => 'boolean',
+            'return_deadline_days' => 'integer',
+            'enable_store_credit' => 'boolean',
+            'store_credit_expiry_days' => 'integer',
+            'store_credit_never_expires' => 'boolean',
+        ];
+    }
+
     public function receiptTemplates(): HasMany
     {
         return $this->hasMany(ReceiptTemplate::class);
     }
 
-    /**
-     * Get the active receipt template.
-     */
     public function activeReceiptTemplate(): BelongsTo
     {
         return $this->belongsTo(ReceiptTemplate::class, 'receipt_template_id');
     }
 
-    /**
-     * Get the logo URL.
-     */
     public function getLogoUrlAttribute(): ?string
     {
         return $this->logo_path ? Storage::url($this->logo_path) : null;
     }
 
-    /**
-     * Scope for active stores.
-     */
+    public function getReturnDeadline(): int
+    {
+        return $this->return_deadline_days ?? 7;
+    }
+
+    public function isStoreCreditEnabled(): bool
+    {
+        return $this->enable_store_credit ?? true;
+    }
+
+    public function getStoreCreditExpiryDays(): int
+    {
+        return $this->store_credit_expiry_days ?? 180;
+    }
+
+    public function isStoreCreditNeverExpires(): bool
+    {
+        return $this->store_credit_never_expires ?? false;
+    }
+
     public function scopeActive($query)
     {
         return $query->where('id', '>', 0);

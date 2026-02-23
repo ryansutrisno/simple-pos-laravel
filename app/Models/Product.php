@@ -25,10 +25,12 @@ class Product extends Model
         'barcode',
         'image',
         'is_active',
+        'is_returnable',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_returnable' => 'boolean',
         'purchase_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
         'low_stock_threshold' => 'integer',
@@ -63,9 +65,19 @@ class Product extends Model
         return $this->stock <= $this->low_stock_threshold;
     }
 
+    public function isReturnable(): bool
+    {
+        return $this->is_returnable ?? true;
+    }
+
     public function scopeLowStock(Builder $query): Builder
     {
         return $query->whereColumn('stock', '<=', 'low_stock_threshold');
+    }
+
+    public function scopeReturnable(Builder $query): Builder
+    {
+        return $query->where('is_returnable', true);
     }
 
     public function getStockStatusAttribute(): string

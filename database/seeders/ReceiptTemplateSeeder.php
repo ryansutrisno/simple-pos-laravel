@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\ReceiptTemplate;
+use Illuminate\Database\Seeder;
 
 class ReceiptTemplateSeeder extends Seeder
 {
@@ -146,5 +146,49 @@ class ReceiptTemplateSeeder extends Seeder
         ];
 
         ReceiptTemplate::create($detailedTemplate);
+
+        $returnTemplate = [
+            'name' => 'Return Receipt',
+            'description' => 'Template for processing product returns',
+            'template_data' => [
+                'header' => [
+                    'show_logo' => true,
+                    'show_store_name' => true,
+                    'show_store_address' => true,
+                    'show_store_phone' => true,
+                    'show_tagline' => false,
+                    'custom_header_message' => 'RETURN RECEIPT',
+                ],
+                'body' => [
+                    'show_return_number' => true,
+                    'show_date' => true,
+                    'show_cashier_name' => true,
+                    'show_transaction_reference' => true,
+                    'show_items_header' => true,
+                    'item_format' => 'name_price_quantity',
+                    'show_exchange_items' => true,
+                ],
+                'footer' => [
+                    'show_refund_method' => true,
+                    'show_refund_amount' => true,
+                    'show_exchange_value' => true,
+                    'show_selisih' => true,
+                    'custom_footer_message' => 'Terima kasih atas pengertian Anda',
+                    'show_barcode' => false,
+                    'show_qr_code' => false,
+                ],
+                'styling' => [
+                    'font_size' => 'normal',
+                    'text_alignment' => 'left',
+                    'bold_headers' => true,
+                    'separator_style' => 'dashes',
+                ],
+            ],
+            'is_default' => false,
+            'is_active' => true,
+            'store_id' => null,
+        ];
+
+        ReceiptTemplate::create($returnTemplate);
     }
 }

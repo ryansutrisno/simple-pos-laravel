@@ -3,9 +3,13 @@
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
+use Database\Seeders\ShieldSeeder;
 
 beforeEach(function () {
+    $seeder = new ShieldSeeder;
+    $seeder->run();
     $this->user = User::factory()->create();
+    $this->user->assignRole('super_admin');
     $this->actingAs($this->user);
 });
 
