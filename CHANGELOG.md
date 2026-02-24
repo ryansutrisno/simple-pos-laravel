@@ -5,6 +5,107 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-02-23
+
+### Added
+
+#### Return/Refund System
+- ProductReturn model with return number generation (RTN-YYYYMMDD-XXXX)
+- ProductReturnItem model for return line items
+- Return types: Full Return, Partial Return, Exchange
+- Return reasons: Damaged, Wrong Item, Not As Expected, Other
+- Refund methods: Cash, Store Credit, Original Payment
+- Return deadline validation (configurable per store, default 7 days)
+- Product returnable flag (is_returnable on products)
+- quantity_returned tracking on TransactionItem
+
+#### Store Credit System
+- StoreCredit model for customer credit balance
+- Store credit earning from returns
+- Store credit usage for transactions
+- Credit expiry tracking (configurable days or never expires)
+- Auto-expire scheduled task (runs daily)
+- Customer store_credit_balance field
+
+#### Points Handling on Returns
+- Automatic points reversal for earned points
+- Automatic points return for redeemed points
+- Proportional calculation based on returned quantity
+
+#### Return Receipt
+- Return receipt template in seeder
+- Return receipt printing via Bluetooth
+- Return receipt preview functionality
+
+#### Return Report
+- ReturnReport page with date filtering
+- Summary statistics (total returns, refunds, exchanges)
+- Detailed return listing
+
+#### API Endpoints
+- `GET /api/returns/{id}` - Get return data for printing
+- `GET /api/returns/{id}/receipt` - Get return receipt preview
+
+### Changed
+- Transaction model: added returns() relationship
+- TransactionItem model: added quantity_returned, returnItems() relationship
+- Product model: added is_returnable field, isReturnable() method
+- Customer model: added store_credit_balance, storeCredits(), returns() relationships
+- Customer model: added reversePoints(), returnPoints(), addStoreCredit(), useStoreCredit() methods
+- FinancialRecord model: added product_return_id field
+- Store model: added return_deadline_days, enable_store_credit, store_credit_expiry_days, store_credit_never_expires fields
+- StockMovementType enum: added Return case
+- ShieldSeeder: added ProductReturn and StoreCredit permissions for all roles
+
+### Database Tables
+- `product_returns` - Return transaction headers
+- `product_return_items` - Return transaction line items
+- `store_credits` - Customer credit balance tracking
+
+### Filament Resources
+- ProductReturnResource - Return viewing with print functionality
+- StoreCreditResource - Store credit viewing with status tracking
+
+### Filament Pages
+- ProcessReturn - Return processing page
+- ReturnReport - Return report page
+
+### Services
+- `ReturnService` - Return/refund business logic
+- `StoreCreditService` - Store credit management
+
+### Console Commands
+- `ExpireStoreCredits` - Daily task to expire credits
+
+### Tests
+- ReturnServiceTest with 40 test cases covering:
+  - generateReturnNumber (4 tests)
+  - validateReturnEligibility (5 tests)
+  - calculateRefund (3 tests)
+  - createReturn (5 tests)
+  - Points handling (4 tests)
+  - Refund processing (2 tests)
+  - StoreCreditService (17 tests)
+
+## [2.4.0] - 2026-02-19
+
+### Added
+- Supplier debt relationship on PurchaseOrder model
+- debt() method to establish one-to-one relationship with SupplierDebt model
+
+### Changed
+- PurchaseOrder model: import HasOne relation, add debt() method
+
+## [2.3.2] - 2026-02-19
+
+### Fixed
+- Correct permission check for bulk delete action in PurchaseOrderResource
+
+## [2.3.1] - 2026-02-19
+
+### Fixed
+- Add missing $this context to discount calculation methods in POS component
+
 ## [2.3.0] - 2026-02-18
 
 ### Added
@@ -310,6 +411,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 2.5.0 | 2026-02-23 | Return/refund system with store credit |
+| 2.4.0 | 2026-02-19 | Supplier debt relationship on PurchaseOrder |
+| 2.3.2 | 2026-02-19 | Fix permission check for bulk delete action |
+| 2.3.1 | 2026-02-19 | Fix discount calculation methods in POS |
 | 2.3.0 | 2026-02-18 | Hold/suspend transaction, multi payment, split bill, barcode scanner |
 | 2.2.0 | 2026-02-17 | Discount system with product, category, global, and voucher discounts |
 | 2.1.0 | 2026-02-16 | Customer management with loyalty points system |
@@ -347,6 +452,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 │   ├── Category Discounts
 │   ├── Global Discounts
 │   └── Voucher/Coupons
+├── Return
+│   ├── Full Return
+│   ├── Partial Return
+│   ├── Exchange
+│   ├── Store Credit
+│   └── Return Report
 ├── Reports
 │   ├── Sales Report
 │   ├── Purchase Report

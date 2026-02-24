@@ -19,6 +19,8 @@ A simple, modern Point of Sale (POS) system built with Laravel 12, Filament 3, a
 - **Barcode Scanner**: Auto-focus input, scan barcode to add products to cart
 - **Inventory Management**: Supplier management, purchase orders, stock adjustments, and stock opname
 - **Comprehensive Reports**: Sales, purchase, profit/loss, stock card, debt, and end of day reports
+- **Return/Refund System**: Full return, partial return, and exchange with multiple refund methods (cash, store credit, original payment)
+- **Store Credit**: Customer credit balance from returns with expiry tracking
 - **Role-Based Access Control**: Filament Shield integration with 5 predefined roles
 
 ## Tech Stack
@@ -159,8 +161,8 @@ php artisan serve
 - **POS Interface**: Available in Filament admin panel
 - **API Endpoints**: 
   - `GET /api/transactions/{id}` - Get transaction data for printing
-  - `GET /api/transactions/{id}/preview` - Preview receipt
-  - `GET /api/transactions/templates` - Get available templates
+  - `GET /api/returns/{id}` - Get return data for printing
+  - `GET /api/returns/{id}/receipt` - Get return receipt preview
 
 ## Production Deployment
 
@@ -297,6 +299,23 @@ Handles ESC/POS code generation for thermal printers:
 - Supports header, body, footer sections
 - Configurable alignment, font size, separators
 - Barcode and QR code support
+
+### ReturnService
+Handles return/refund operations:
+- `validateReturnEligibility()` - Check if transaction is within return deadline
+- `calculateRefund()` - Calculate refund amounts including exchange values
+- `createReturn()` - Process return with stock updates and financial records
+- `handlePointsReversal()` - Reverse earned points on return
+- `handlePointsReturn()` - Return redeemed points on return
+- Return deadline: Configurable per store (default 7 days)
+
+### StoreCreditService
+Manages customer store credits:
+- `earnCredit()` - Add credit to customer from return
+- `useCredit()` - Use credit for transaction
+- `getBalance()` - Get customer's current credit balance
+- `checkAndExpireCredits()` - Auto-expire credits past expiry date
+- Credit expiry: Configurable (default 180 days) or never expires
 
 ## Troubleshooting
 
