@@ -175,6 +175,13 @@ class TransactionResource extends Resource
                     ->sortable()
                     ->default(0)
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('tax_amount')
+                    ->label('Pajak')
+                    ->money('IDR')
+                    ->sortable()
+                    ->default(0)
+                    ->visible(fn ($record) => $record->tax_enabled)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('voucher_code')
                     ->label('Voucher')
                     ->searchable()

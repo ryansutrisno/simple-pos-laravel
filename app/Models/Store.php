@@ -30,6 +30,9 @@ class Store extends Model
         'enable_store_credit',
         'store_credit_expiry_days',
         'store_credit_never_expires',
+        'tax_enabled',
+        'tax_rate',
+        'tax_name',
     ];
 
     protected function casts(): array
@@ -42,6 +45,8 @@ class Store extends Model
             'enable_store_credit' => 'boolean',
             'store_credit_expiry_days' => 'integer',
             'store_credit_never_expires' => 'boolean',
+            'tax_enabled' => 'boolean',
+            'tax_rate' => 'decimal:2',
         ];
     }
 
@@ -78,6 +83,21 @@ class Store extends Model
     public function isStoreCreditNeverExpires(): bool
     {
         return $this->store_credit_never_expires ?? false;
+    }
+
+    public function isTaxEnabled(): bool
+    {
+        return $this->tax_enabled ?? false;
+    }
+
+    public function getTaxRate(): float
+    {
+        return (float) ($this->tax_rate ?? 10.00);
+    }
+
+    public function getTaxName(): string
+    {
+        return $this->tax_name ?? 'PPN';
     }
 
     public function scopeActive($query)

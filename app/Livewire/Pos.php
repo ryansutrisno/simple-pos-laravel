@@ -13,6 +13,7 @@ use App\Models\TransactionPayment;
 use App\Services\DiscountService;
 use App\Services\PointService;
 use App\Services\ReceiptTemplateService;
+use App\Services\TaxService;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -82,16 +83,21 @@ class Pos extends Component
 
     public $barcodeInput = '';
 
+    public $taxEnabled = false;
+
     protected PointService $pointService;
 
     protected DiscountService $discountService;
 
+    protected TaxService $taxService;
+
     protected $listeners = ['barcode-scanned' => 'processBarcode'];
 
-    public function boot(PointService $pointService, DiscountService $discountService): void
+    public function boot(PointService $pointService, DiscountService $discountService, TaxService $taxService): void
     {
         $this->pointService = $pointService;
         $this->discountService = $discountService;
+        $this->taxService = $taxService;
     }
 
     public function mount()
@@ -104,6 +110,8 @@ class Pos extends Component
 
         $activeTemplate = $templateService->getActiveTemplate($this->store);
         $this->selectedTemplateId = $activeTemplate?->id;
+
+        $this->taxEnabled = $this->store->isTaxEnabled();
     }
 
     public function updatedPaymentMethod($value)
@@ -252,6 +260,39 @@ class Pos extends Component
         return max(0, (float) $this->cashAmount - $this->grandTotal);
     }
 
+    public function getTaxAmountProperty(): float
+    {
+        if (! $this->taxEnabled) {
+            return 0;
+        }
+
+        return $this->taxService->calculateTax($this->grandTotal, $this->store->getTaxRate());
+    }
+
+    public function getGrandTotalWithTaxProperty(): float
+    {
+        return $this->grandTotal + $this->taxAmount;
+    }
+
+    public function getTaxRateProperty(): float
+    {
+        return $this->store->getTaxRate();
+    }
+
+    public function getTaxNameProperty(): string
+    {
+        return $this->store->getTaxName();
+    }
+
+    public function getChangeWithTaxProperty()
+    {
+        if ($this->paymentMethod !== 'cash') {
+            return 0;
+        }
+
+        return max(0, (float) $this->cashAmount - $this->grandTotalWithTax);
+    }
+
     public function getCanCheckoutProperty()
     {
         if (empty($this->cart)) {
@@ -259,7 +300,7 @@ class Pos extends Component
         }
 
         if ($this->paymentMethod === 'cash') {
-            return (float) $this->cashAmount >= $this->grandTotal;
+            return (float) $this->cashAmount >= $this->grandTotalWithTax;
         }
 
         return true;
@@ -715,6 +756,10 @@ class Pos extends Component
             'discount_from_points' => $discountFromPoints,
             'is_split' => false,
             'total_splits' => 1,
+            'subtotal_before_tax' => $grandTotal,
+            'tax_amount' => $this->taxAmount,
+            'tax_rate' => $this->taxEnabled ? $this->store->getTaxRate() : 0,
+            'tax_enabled' => $this->taxEnabled,
         ]);
 
         foreach ($this->cart as $item) {
@@ -813,6 +858,10 @@ class Pos extends Component
             'discount_from_points' => $discountFromPoints,
             'is_split' => false,
             'total_splits' => 1,
+            'subtotal_before_tax' => $grandTotal,
+            'tax_amount' => $this->taxAmount,
+            'tax_rate' => $this->taxEnabled ? $this->store->getTaxRate() : 0,
+            'tax_enabled' => $this->taxEnabled,
         ]);
 
         foreach ($this->cart as $item) {

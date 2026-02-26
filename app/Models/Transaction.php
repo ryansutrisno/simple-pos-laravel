@@ -27,6 +27,10 @@ class Transaction extends Model
         'discount_from_points',
         'is_split',
         'total_splits',
+        'subtotal_before_tax',
+        'tax_amount',
+        'tax_rate',
+        'tax_enabled',
     ];
 
     protected function casts(): array
@@ -42,6 +46,10 @@ class Transaction extends Model
             'discount_from_points' => 'decimal:2',
             'is_split' => 'boolean',
             'total_splits' => 'integer',
+            'subtotal_before_tax' => 'decimal:2',
+            'tax_amount' => 'decimal:2',
+            'tax_rate' => 'decimal:2',
+            'tax_enabled' => 'boolean',
         ];
     }
 
@@ -103,5 +111,34 @@ class Transaction extends Model
     public function isFullyReturned(): bool
     {
         return $this->items()->where('quantity_returned', '<', \DB::raw('quantity'))->doesntExist();
+    }
+
+    public function isTaxEnabled(): bool
+    {
+        return $this->tax_enabled ?? false;
+    }
+
+    public function getSubtotalBeforeTaxAttribute(): float
+    {
+        return (float) ($this->subtotal_before_tax ?? 0);
+    }
+
+    public function getTaxAmountAttribute(): float
+    {
+        return (float) ($this->tax_amount ?? 0);
+    }
+
+    public function getTaxRateAttribute(): float
+    {
+        return (float) ($this->tax_rate ?? 0);
+    }
+
+    public function getSubtotalWithoutTaxAttribute(): float
+    {
+        if ($this->tax_enabled && $this->tax_amount > 0) {
+            return (float) ($this->total - $this->tax_amount);
+        }
+
+        return (float) $this->total;
     }
 }

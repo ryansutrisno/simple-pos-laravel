@@ -116,6 +116,33 @@ class StoreResource extends Resource
 5. Printer akan terhubung dan tersimpan otomatis'),
                     ])
                     ->columns(1),
+
+                Forms\Components\Section::make('Pengaturan Pajak (PPN)')
+                    ->schema([
+                        Forms\Components\Toggle::make('tax_enabled')
+                            ->label('Aktifkan Pajak')
+                            ->helperText('Aktifkan untuk menambahkan PPN ke setiap transaksi')
+                            ->default(false)
+                            ->reactive(),
+
+                        Forms\Components\TextInput::make('tax_rate')
+                            ->label('Tarif Pajak (%)')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(100)
+                            ->step(0.01)
+                            ->default(10)
+                            ->helperText('Tarif pajak PPN (default: 10%)')
+                            ->visible(fn ($get) => $get('tax_enabled')),
+
+                        Forms\Components\TextInput::make('tax_name')
+                            ->label('Nama Pajak')
+                            ->maxLength(50)
+                            ->default('PPN')
+                            ->helperText('Nama pajak yang ditampilkan di receipt')
+                            ->visible(fn ($get) => $get('tax_enabled')),
+                    ])
+                    ->columns(2),
             ]);
     }
 
