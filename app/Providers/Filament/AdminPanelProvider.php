@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Backups;
 use App\Filament\Widgets\FinancialRecordsChart;
 use App\Filament\Widgets\StatsOverview;
 use App\Filament\Widgets\TransactionsChart;
@@ -37,6 +38,15 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Blue,
             ])
+            ->navigationGroups([
+                'Manajemen Produk',
+                'Transaksi',
+                'Keuangan',
+                'Pelanggan',
+                'Supplier',
+                'Pengaturan',
+                'System',
+            ])
             ->renderHook(
                 'panels::body.end',
                 fn (): string => Blade::render("@vite('resources/js/bluetooth-printer.js')")
@@ -46,6 +56,7 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
                 \App\Filament\Pages\Pos::class,
+                Backups::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
