@@ -21,6 +21,7 @@ A simple, modern Point of Sale (POS) system built with Laravel 12, Filament 3, a
 - **Comprehensive Reports**: Sales, purchase, profit/loss, stock card, debt, and end of day reports
 - **Return/Refund System**: Full return, partial return, and exchange with multiple refund methods (cash, store credit, original payment)
 - **Store Credit**: Customer credit balance from returns with expiry tracking
+- **Tax (PPN) System**: Configure tax rate, enable/disable per store, automatic calculation in transactions
 - **Role-Based Access Control**: Filament Shield integration with 5 predefined roles
 
 ## Tech Stack
@@ -316,6 +317,15 @@ Manages customer store credits:
 - `getBalance()` - Get customer's current credit balance
 - `checkAndExpireCredits()` - Auto-expire credits past expiry date
 - Credit expiry: Configurable (default 180 days) or never expires
+
+### TaxService
+Handles tax calculations:
+- `calculateTax($subtotal, $rate)` - Calculate tax amount from subtotal
+- `calculateTotalWithTax($subtotal, $rate)` - Calculate total including tax
+- `getTaxData($store, $subtotal)` - Get complete tax data for a transaction
+- `calculateCartTax($items, $rate)` - Calculate tax for cart items
+- Tax rate: Configurable per store (default 10%)
+- Tax name: Configurable per store (default "PPN")
 
 ## Troubleshooting
 

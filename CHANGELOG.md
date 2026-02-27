@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-02-26
+
+### Added
+
+#### Tax (PPN) System
+- Tax configuration in Store resource (enable/disable, rate, name)
+- TaxService for tax calculations
+- Tax fields on Store model (tax_enabled, tax_rate, tax_name)
+- Tax fields on Transaction model (tax_amount, tax_rate, tax_enabled, subtotal_before_tax)
+- Tax calculation in POS checkout flow
+- Display tax amount column in Transaction resource
+- Change calculation with tax consideration
+- Database migration for tax columns
+- Unit tests for TaxService (11 test cases)
+
+### Database Tables
+- Added tax fields to `stores` table
+- Added tax fields to `transactions` table
+
 ## [2.5.0] - 2026-02-23
 
 ### Added
@@ -411,6 +430,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 2.6.0 | 2026-02-26 | Tax (PPN) system for stores and transactions |
 | 2.5.0 | 2026-02-23 | Return/refund system with store credit |
 | 2.4.0 | 2026-02-19 | Supplier debt relationship on PurchaseOrder |
 | 2.3.2 | 2026-02-19 | Fix permission check for bulk delete action |
@@ -458,6 +478,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 │   ├── Exchange
 │   ├── Store Credit
 │   └── Return Report
+├── Tax (PPN)
+│   ├── Tax Configuration
+│   ├── Tax Calculation
+│   └── Tax Display
 ├── Reports
 │   ├── Sales Report
 │   ├── Purchase Report
