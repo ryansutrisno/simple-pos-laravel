@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-02-27
+
+### Added
+
+#### Backup & Restore System
+- Spatie Laravel Backup package integration (v9.4)
+- Automatic daily database backup at 02:00 AM
+- Automatic backup cleanup at 03:00 AM
+- Manual backup creation via Filament admin panel (System → Backup & Restore)
+- Full backup option (database + application files)
+- Restore database from backup with confirmation dialog
+- Download backup files
+- Delete backup files (single or bulk)
+- Backup management UI with file listing (name, size, date, age)
+- Backup retention policy (7 days default)
+- Backup storage in `storage/app/backups/Laravel/`
+
+#### Console Commands
+- `backup:run` - Create backup (with --only-db option for database only)
+- `backup:restore {file}` - Restore database from backup file
+- `backup:clean` - Clean old backups based on retention policy
+
+#### Configuration
+- `config/backup.php` - Spatie backup configuration
+- `config/filesystems.php` - Added 'backups' disk
+- `routes/console.php` - Scheduled backup tasks (daily at 02:00 and 03:00)
+
+### Filament Pages
+- Backups - Backup management page under System menu with:
+  - List all backups with details
+  - Download backup files
+  - Restore database from backup
+  - Delete backups
+  - Create manual backups
+  - Cleanup old backups
+
+### Storage
+- Backup files stored in `storage/app/backups/Laravel/`
+- Zip format containing database dump and optional files
+- No database tables required (filesystem-based)
+
+### Dependencies
+- `spatie/laravel-backup` - Backup and restore functionality
+
 ## [2.6.0] - 2026-02-26
 
 ### Added
@@ -430,6 +474,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 2.7.0 | 2026-02-27 | Backup & restore system with automatic daily backups |
 | 2.6.0 | 2026-02-26 | Tax (PPN) system for stores and transactions |
 | 2.5.0 | 2026-02-23 | Return/refund system with store credit |
 | 2.4.0 | 2026-02-19 | Supplier debt relationship on PurchaseOrder |
@@ -498,4 +543,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     ├── Role Management
     ├── Permission Management
     └── User Management
+├── Backup & Restore
+│   ├── Automatic Daily Backup
+│   ├── Manual Backup Creation
+│   ├── Restore from Backup
+│   ├── Download Backup Files
+│   └── Backup Cleanup
 ```

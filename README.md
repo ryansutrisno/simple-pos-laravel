@@ -22,6 +22,7 @@ A simple, modern Point of Sale (POS) system built with Laravel 12, Filament 3, a
 - **Return/Refund System**: Full return, partial return, and exchange with multiple refund methods (cash, store credit, original payment)
 - **Store Credit**: Customer credit balance from returns with expiry tracking
 - **Tax (PPN) System**: Configure tax rate, enable/disable per store, automatic calculation in transactions
+- **Backup & Restore**: Automatic daily database backups with manual backup options, restore from backup, and backup management UI
 - **Role-Based Access Control**: Filament Shield integration with 5 predefined roles
 
 ## Tech Stack
@@ -326,6 +327,20 @@ Handles tax calculations:
 - `calculateCartTax($items, $rate)` - Calculate tax for cart items
 - Tax rate: Configurable per store (default 10%)
 - Tax name: Configurable per store (default "PPN")
+
+### Backup & Restore
+Handles database backup and restore operations:
+- Automatic daily backups via scheduled task (02:00 AM)
+- Manual backup creation (database only or full backup)
+- Restore database from backup file with confirmation
+- Download and delete backup files
+- Backup cleanup with retention policy (7 days)
+- Storage location: `storage/app/backups/Laravel/`
+- Commands:
+  - `php artisan backup:run --only-db` - Backup database only
+  - `php artisan backup:run` - Full backup (database + files)
+  - `php artisan backup:restore {filename}` - Restore from backup
+  - `php artisan backup:clean` - Clean old backups
 
 ## Troubleshooting
 
