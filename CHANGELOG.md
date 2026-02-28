@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.1] - 2026-03-01
+
+### Fixed
+
+#### Null Safety Improvements
+- Add null-safe operators (`?->`) to tax-related property accessors in POS component
+- Provide sensible defaults for tax rate (10.00) and tax name ("PPN") when store is unavailable
+- Fix tax visibility check in transaction table to handle null records gracefully
+- Ensure consistent null handling across transaction and POS components to prevent runtime errors
+
+#### UI/UX Improvements
+- Update navigation sort order for ProcessReturn (3) and EndOfDayReport (2) pages
+- Remove redundant `navigationGroup` from EndOfDayReport for cleaner navigation structure
+- Improve responsive filter layout with breakpoint-specific column spans (2 columns on mobile, 4 on desktop)
+- Refactor debt report view with condensed button markup for better readability
+
+#### Layout & Navigation
+- Fix button positioning and spacing in reports
+- Optimize navigation hierarchy for better user flow
+- Improve responsive design across report pages
+
 ## [2.7.0] - 2026-02-27
 
 ### Added
@@ -474,6 +495,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 2.7.1 | 2026-03-01 | Bug fixes: null safety improvements, UI refinements, navigation fixes |
 | 2.7.0 | 2026-02-27 | Backup & restore system with automatic daily backups |
 | 2.6.0 | 2026-02-26 | Tax (PPN) system for stores and transactions |
 | 2.5.0 | 2026-02-23 | Return/refund system with store credit |
