@@ -111,7 +111,7 @@ class Pos extends Component
         $activeTemplate = $templateService->getActiveTemplate($this->store);
         $this->selectedTemplateId = $activeTemplate?->id;
 
-        $this->taxEnabled = $this->store->isTaxEnabled();
+        $this->taxEnabled = $this->store?->isTaxEnabled() ?? false;
     }
 
     public function updatedPaymentMethod($value)
@@ -266,7 +266,7 @@ class Pos extends Component
             return 0;
         }
 
-        return $this->taxService->calculateTax($this->grandTotal, $this->store->getTaxRate());
+        return $this->taxService->calculateTax($this->grandTotal, $this->store?->getTaxRate() ?? 10.00);
     }
 
     public function getGrandTotalWithTaxProperty(): float
@@ -276,12 +276,12 @@ class Pos extends Component
 
     public function getTaxRateProperty(): float
     {
-        return $this->store->getTaxRate();
+        return $this->store?->getTaxRate() ?? 10.00;
     }
 
     public function getTaxNameProperty(): string
     {
-        return $this->store->getTaxName();
+        return $this->store?->getTaxName() ?? 'PPN';
     }
 
     public function getChangeWithTaxProperty()

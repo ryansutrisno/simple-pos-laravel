@@ -25,9 +25,7 @@ class EndOfDayReport extends Page implements HasForms
 
     protected static string $view = 'filament.pages.reports.end-of-day-report';
 
-    protected static ?string $navigationGroup = 'Laporan';
-
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $title = 'Tutup Kasir';
 

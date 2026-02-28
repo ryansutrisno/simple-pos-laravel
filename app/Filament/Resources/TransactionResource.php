@@ -180,7 +180,7 @@ class TransactionResource extends Resource
                     ->money('IDR')
                     ->sortable()
                     ->default(0)
-                    ->visible(fn ($record) => $record->tax_enabled)
+                    ->visible(fn ($record) => $record?->tax_enabled ?? false)
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('voucher_code')
                     ->label('Voucher')
@@ -244,8 +244,17 @@ class TransactionResource extends Resource
 
                         return $indicators;
                     })
-                    ->columns(2),
-            ], layout: FiltersLayout::AboveContent)->filtersFormColumns(2)
+                    ->columns(2)
+                    ->columnSpan([
+                        'default' => 1,
+                        'sm' => 2,
+                        'lg' => 2,
+                    ]),
+            ], layout: FiltersLayout::AboveContent)->filtersFormColumns([
+                'default' => 1,
+                'sm' => 2,
+                'lg' => 4,
+            ])
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->label('Detail'),
