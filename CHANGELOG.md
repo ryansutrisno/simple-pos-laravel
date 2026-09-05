@@ -1,3 +1,10 @@
+## [2.20.0](https://github.com/ryansutrisno/simpel-pos-laravel/compare/v2.19.2...v2.20.0) (2026-09-05)
+
+
+### ✨ Features
+
+* **docker:** add full docker setup for laravel app ([35f9b8b](https://github.com/ryansutrisno/simpel-pos-laravel/commit/35f9b8b2cd50c73c525c270f3ccf28a9168954be))
+
 ## [2.19.2](https://github.com/ryansutrisno/simpel-pos-laravel/compare/v2.19.1...v2.19.2) (2026-05-26)
 
 
